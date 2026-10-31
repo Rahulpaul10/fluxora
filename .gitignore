@@ -1,0 +1,31 @@
+# dependencies and build output
+node_modules
+dist
+*.log
+
+# secrets: never commit these
+.env
+.env.*
+!.env.example
+.circle
+recovery_file*
+*.keystore
+keystore/
+
+# Arc Studio runtime logs
+traces.jsonl
+console.jsonl
+
+# Foundry
+contracts/out
+contracts/cache
+contracts/broadcast
+cache
+out
+broadcast
+lib/
+
+# editor / OS
+.DS_Store
+.idea
+.vscode
