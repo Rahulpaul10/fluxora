@@ -23,7 +23,7 @@ contracts/broadcast
 cache
 out
 broadcast
-lib/
+/lib/
 
 # editor / OS
 .DS_Store
