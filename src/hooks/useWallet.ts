@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useAccount, useAccountEffect, useConnect, useSwitchChain, type Connector } from 'wagmi'
 import { toast } from 'sonner'
 import { ARC_CHAIN_ID, asChainId, isSupportedChain, networkById } from '@/config/networks'
 import { shortAddr } from '@/lib/format'
+import { isMobileBrowser, metamaskDeepLink, metamaskDetectedSnapshot, subscribeMetaMask } from '@/lib/walletEnv'
 
 /** Wallet state relative to Arc, the chain every FLUXORA feature except Bridge runs on. */
 export function useArcWallet() {
@@ -45,22 +46,18 @@ export function describeConnectError(error: unknown): string {
 export function useConnectWallet() {
   const { connectors, connectAsync, isPending, reset } = useConnect()
   const [error, setError] = useState<string>()
-  const [metamaskInstalled, setMetamaskInstalled] = useState(false)
+  // Live detection: EIP-6963 announcements, legacy injection events, and a short re-check after load
+  const metamaskDetected = useSyncExternalStore(subscribeMetaMask, metamaskDetectedSnapshot, () => false)
+  const mobile = isMobileBrowser()
 
   // Prefer the wallet that announced itself through EIP-6963; fall back to the targeted injected connector.
   const metamask: Connector | undefined = connectors.find((c) => c.id === 'io.metamask') ?? connectors.find((c) => c.id === 'metaMask')
+  const metamaskInstalled = metamaskDetected || metamask?.id === 'io.metamask'
 
-  useEffect(() => {
-    let live = true
-    if (!metamask) return
-    metamask
-      .getProvider()
-      .then((p) => live && setMetamaskInstalled(Boolean(p)))
-      .catch(() => live && setMetamaskInstalled(false))
-    return () => {
-      live = false
-    }
-  }, [metamask])
+  /** Phone or tablet without MetaMask in the browser: continue inside the MetaMask app instead of a dead end. */
+  const openInMetaMaskApp = () => {
+    window.open(metamaskDeepLink(), '_self')
+  }
 
   const connectWith = async (connector: Connector) => {
     setError(undefined)
@@ -73,7 +70,9 @@ export function useConnectWallet() {
 
   return {
     metamask,
-    metamaskInstalled: metamaskInstalled || metamask?.id === 'io.metamask',
+    metamaskInstalled,
+    mobile,
+    openInMetaMaskApp,
     connectWith,
     connecting: isPending,
     error,

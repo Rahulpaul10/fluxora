@@ -42,7 +42,7 @@ function summarize(method: string, raw: unknown): string {
     const base = String(o.baseFeePerGas[o.baseFeePerGas.length - 1] ?? '')
     return `baseFee ${base} · ${o.reward?.length ?? 0} reward rows`
   }
-  if (method === 'eth_getBlockByNumber' && o) return `baseFeePerGas ${String(o.baseFeePerGas ?? 'MISSING')}`
+  if (method === 'eth_getBlockByNumber' && o) return `baseFeePerGas ${typeof o.baseFeePerGas === 'string' ? o.baseFeePerGas : 'MISSING'}`
   return short(raw)
 }
 

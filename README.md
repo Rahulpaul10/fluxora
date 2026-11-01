@@ -72,3 +72,9 @@ Never commit private keys, seed phrases, API secrets or deployment credentials. 
 ## Deploying
 
 Netlify: see `docs/NETLIFY.md`. Vercel and custom domains: see `docs/HOSTING.md`.
+
+## Deploying the contracts by hand
+
+See `docs/REMIX_DEPLOYMENT.md` for the Remix steps with your own wallet, and run `bun run verify:deployment` (read-only) afterwards to check roles and wiring.
+
+Only need Others Pay? Deploy the single payments contract: `docs/PAYMENTS_REMIX_DEPLOYMENT.md` (file: `contracts/standalone/FluxoraPaymentsStandalone.sol`), then check it with `bun run verify:payments`.

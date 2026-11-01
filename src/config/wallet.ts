@@ -84,7 +84,7 @@ export const config = createConfig({
           walletConnect({
             projectId: WALLETCONNECT_PROJECT_ID,
             showQrModal: false,
-            metadata: { name: 'FLUXORA', description: 'One Wallet. Every Possibility.', url: appUrl(), icons: [] },
+            metadata: { name: 'FLUXORA', description: 'One Wallet. Every Possibility.', url: appUrl(), icons: [`${appUrl()}/fluxora-icon.svg`] },
           }),
         ]
       : []),
@@ -116,4 +116,7 @@ export const queryRetryDelay = (attempt: number): number => Math.min(500 * 2 ** 
     }
   }
   if (!walletConnectEnabled) console.info('[FLUXORA] WalletConnect is off: set VITE_WALLETCONNECT_PROJECT_ID to enable it.')
+  else if (!/^[a-f0-9]{32}$/i.test(WALLETCONNECT_PROJECT_ID)) {
+    reportConfigIssue('VITE_WALLETCONNECT_PROJECT_ID does not look like a Reown/WalletConnect project id (32 hexadecimal characters). WalletConnect will be rejected until it is corrected.')
+  }
 }

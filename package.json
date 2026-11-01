@@ -21,7 +21,10 @@
     "setup:contracts": "forge install foundry-rs/forge-std --no-git",
     "test:tx": "bun run ./scripts/test-tx-lifecycle.ts",
     "test:ui": "bun run ./scripts/smoke-ui.tsx",
-    "test:wallet": "bun run ./scripts/test-wallet-flow.tsx"
+    "test:wallet": "bun run ./scripts/test-wallet-flow.tsx",
+    "verify:deployment": "bun run ./scripts/verify-deployment.ts",
+    "verify:payments": "bun run ./scripts/verify-payments.ts",
+    "test:connect": "bun run ./scripts/test-connect.tsx"
   },
   "dependencies": {
     "@circle-fin/adapter-viem-v2": "^1.19.2",

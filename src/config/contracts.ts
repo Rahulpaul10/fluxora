@@ -77,9 +77,19 @@ export const deployedCount = (): number => Object.values(CONTRACT_DEFINITIONS).f
       reportConfigIssue(`${CONTRACT_DEFINITIONS[n].envVar} is set but is not a valid address, so ${CONTRACT_DEFINITIONS[n].label} stays off.`)
     }
   }
-  const missing = names.filter((n) => !CONTRACT_DEFINITIONS[n].address)
-  if (missing.length > 0 && missing.length < names.length) {
-    reportConfigIssue(`Only ${names.length - missing.length} of ${names.length} FLUXORA contract addresses are configured. Missing: ${missing.map((n) => CONTRACT_DEFINITIONS[n].envVar).join(', ')}.`)
+  // Each feature works on its own (for example Pay needs only the payments contract), so a partial set is fine.
+  // Only flag contracts whose own dependencies are missing.
+  const has = (n: ContractName): boolean => Boolean(CONTRACT_DEFINITIONS[n].address)
+  const needs: [ContractName, ContractName[]][] = [
+    ['staking', ['token']],
+    ['governance', ['token', 'timelock']],
+    ['timelock', ['governance']],
+  ]
+  for (const [name, deps] of needs) {
+    const missingDeps = deps.filter((d) => !has(d))
+    if (has(name) && missingDeps.length > 0) {
+      reportConfigIssue(`${CONTRACT_DEFINITIONS[name].envVar} is set but ${missingDeps.map((d) => CONTRACT_DEFINITIONS[d].envVar).join(', ')} is not, so ${CONTRACT_DEFINITIONS[name].label} cannot work.`)
+    }
   }
   const block: unknown = import.meta.env.VITE_FLUXORA_DEPLOY_BLOCK
   if (typeof block === 'string' && block.trim() && envNumber(block) === undefined) {

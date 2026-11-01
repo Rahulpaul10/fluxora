@@ -56,7 +56,7 @@ function links(error: unknown): Link[] {
       })
       cur = o.cause
     } else {
-      out.push({ name: '', message: String(cur) })
+      out.push({ name: '', message: typeof cur === 'string' ? cur : '' })
       break
     }
   }

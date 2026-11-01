@@ -9,7 +9,7 @@ import { Card, Notice } from './ui'
 
 /** Wallet connection interface: MetaMask connects directly, everything else goes through the wallet modal. */
 export function ConnectPanel() {
-  const { metamask, metamaskInstalled, connectWith, connecting, error, clearError } = useConnectWallet()
+  const { metamask, metamaskInstalled, mobile, openInMetaMaskApp, connectWith, connecting, error, clearError } = useConnectWallet()
   return (
     <ConnectKitButton.Custom>
       {({ show }) => (
@@ -19,7 +19,11 @@ export function ConnectPanel() {
               disabled={connecting}
               onClick={() => {
                 if (metamask && metamaskInstalled) void connectWith(metamask)
-                else {
+                else if (mobile) {
+                  // Phone or tablet browsers have no extension: continue inside the MetaMask app's own browser.
+                  toast.info('Opening FLUXORA inside the MetaMask app…')
+                  openInMetaMaskApp()
+                } else {
                   toast.info('MetaMask was not detected in this browser. Opening the install page.')
                   window.open('https://metamask.io/download/', '_blank', 'noopener,noreferrer')
                 }
@@ -31,7 +35,7 @@ export function ConnectPanel() {
               </span>
               <span className="min-w-0">
                 <span className="block font-display text-base font-semibold text-white">MetaMask</span>
-                <span className="block text-xs text-slate-400">{connecting ? 'Check your wallet…' : metamaskInstalled ? 'Detected. Click to connect' : 'Not detected. Click to install'}</span>
+                <span className="block text-xs text-slate-400">{connecting ? 'Check your wallet…' : metamaskInstalled ? 'Detected. Click to connect' : mobile ? 'Not in this browser. Open in the MetaMask app' : 'Not detected. Click to install'}</span>
               </span>
             </button>
             <button
@@ -44,7 +48,7 @@ export function ConnectPanel() {
               </span>
               <span className="min-w-0">
                 <span className="block font-display text-base font-semibold text-white">WalletConnect</span>
-                <span className="block text-xs text-slate-400">{walletConnectEnabled ? 'Scan with any mobile wallet' : 'Needs a project id (see .env.example)'}</span>
+                <span className="block text-xs text-slate-400">{walletConnectEnabled ? (mobile ? 'Pick a wallet app on this phone' : 'Scan with any mobile wallet') : 'Needs a project id (see .env.example)'}</span>
               </span>
             </button>
           </div>

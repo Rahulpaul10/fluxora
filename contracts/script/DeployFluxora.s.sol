@@ -130,15 +130,13 @@ contract DeployFluxora is Script {
         bytes4 symbolSelector = bytes4(keccak256("symbol()"));
         (bool symbolSuccess, bytes memory symbolData) = ARC_USDC.staticcall(abi.encodeWithSelector(symbolSelector));
         if (!symbolSuccess) revert InvalidUsdcMetadata(ARC_USDC, symbolSelector, symbolData);
-        try this.decodeUsdcSymbol(symbolData) returns (string memory symbol) {
-            if (keccak256(symbolData) != keccak256(abi.encode(symbol))) {
-                revert InvalidUsdcMetadata(ARC_USDC, symbolSelector, symbolData);
-            }
-            if (keccak256(bytes(symbol)) != keccak256(bytes("USDC"))) {
-                revert UnexpectedUsdcSymbol(ARC_USDC, symbol, "USDC");
-            }
-        } catch {
+        (bool symbolDecoded, string memory symbol) = _decodeSymbol(symbolData);
+        // The re-encoding comparison rejects non-canonical encodings (for example dirty padding bytes).
+        if (!symbolDecoded || keccak256(symbolData) != keccak256(abi.encode(symbol))) {
             revert InvalidUsdcMetadata(ARC_USDC, symbolSelector, symbolData);
+        }
+        if (keccak256(bytes(symbol)) != keccak256(bytes("USDC"))) {
+            revert UnexpectedUsdcSymbol(ARC_USDC, symbol, "USDC");
         }
         bytes4 decimalsSelector = bytes4(keccak256("decimals()"));
         (bool decimalsSuccess, bytes memory decimalsData) = ARC_USDC.staticcall(abi.encodeWithSelector(decimalsSelector));
@@ -149,9 +147,18 @@ contract DeployFluxora is Script {
         if (decimals != 6) revert UnexpectedUsdcDecimals(ARC_USDC, decimals, 6);
     }
 
-    /// @dev External decoding boundary lets malformed symbol return data be caught as a custom error.
-    function decodeUsdcSymbol(bytes calldata data) external pure returns (string memory) {
-        return abi.decode(data, (string));
+    /// @dev Bounds-checks ABI `string` return data before decoding, so malformed data yields a custom error.
+    ///      Implemented without an external self-call because Foundry scripts must not use `address(this)`.
+    function _decodeSymbol(bytes memory data) private pure returns (bool ok, string memory symbol) {
+        if (data.length < 64) return (false, "");
+        uint256 offset;
+        uint256 length;
+        assembly ("memory-safe") {
+            offset := mload(add(data, 32))
+            length := mload(add(data, 64))
+        }
+        if (offset != 32 || length > 1024 || data.length != 64 + ((length + 31) / 32) * 32) return (false, "");
+        return (true, abi.decode(data, (string)));
     }
 
     function _assertDeployment(Deployment memory deployed) private view {

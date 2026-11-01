@@ -1,5 +1,8 @@
 # Deploying the FLUXORA contracts
 
+> Prefer deploying by hand from Remix with your own wallet? Follow `docs/REMIX_DEPLOYMENT.md` (self-contained sources in `contracts/remix/`). The Foundry steps below do the same thing in one script.
+
+
 You deploy these contracts yourself, from your own wallet. Arc Studio does not deploy to, sign for, or fund anything on mainnet,
 and this repository contains no deployed addresses. Deployments are irreversible and move real funds. Do the whole process on
 Arc Testnet first (chain id 5042002), get an independent professional audit, and review every address and parameter before you

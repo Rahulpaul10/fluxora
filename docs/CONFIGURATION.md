@@ -15,7 +15,7 @@ phrase or API secret in any of them.
 
 | Variable | Required | Meaning |
 | --- | --- | --- |
-| `VITE_WALLETCONNECT_PROJECT_ID` | no | Enables WalletConnect. Free id from https://cloud.walletconnect.com |
+| `VITE_WALLETCONNECT_PROJECT_ID` | no | Enables WalletConnect. Free project id from https://cloud.reown.com (formerly WalletConnect Cloud). 32 hex characters |
 | `VITE_APP_URL` | no | URL wallets see. Leave empty to use the page's own origin (recommended) |
 | `VITE_ARC_RPC_URL` | no | Override the Arc mainnet RPC (for example a private or paid endpoint) |
 | `VITE_ARC_EXPLORER_URL` | no | Override the Arc explorer base URL |
@@ -87,3 +87,14 @@ Payments with a plain transfer (Send) and everything on Swap and Bridge work wit
 - A hash the network has never recorded for 30 minutes is shown as "Not found" in History instead of "Pending".
 - `bun run test:tx` runs the tracker tests. `bun run test:tx live-init` and `bun run test:tx live` do a real
   transfer on Arc Testnet with a throwaway key (fund the printed address from the faucet in between).
+
+## Connecting a wallet
+
+- **MetaMask in a desktop browser:** detected automatically (the extension announces itself, also if it loads after the page). One click connects.
+- **MetaMask on a phone:** phone browsers have no extensions. The MetaMask tile then says "Open in the MetaMask app" and opens this exact page inside MetaMask's own browser (`https://metamask.app.link/dapp/<your-domain>/...`, built from the current address, never a hardcoded domain). Inside the MetaMask app browser the wallet is detected like on desktop.
+- **WalletConnect (any mobile wallet, QR code on desktop):** needs your own project id.
+  1. Create a free project at https://cloud.reown.com and copy the Project ID (32 hexadecimal characters).
+  2. Put it in `.env` as `VITE_WALLETCONNECT_PROJECT_ID=<your id>`, then restart the dev server. On Netlify or Vercel add it under Environment variables and redeploy (it is read at build time).
+  3. In the Reown project, add every domain that serves the app to the allowed domains: the Arc Studio preview address, your `*.netlify.app` address and your own domain later. The connect screen prints the exact origin to allow.
+  Without a project id the tile says "Needs a project id" and nothing is faked. A malformed id raises a "Configuration problem" notice.
+- Test it: `bun run test:connect` (and `WC=1 bun run test:connect` for the configured-WalletConnect screen). These use a fake EIP-1193 provider, so they prove FLUXORA's code, not a real wallet or the WalletConnect relay.
