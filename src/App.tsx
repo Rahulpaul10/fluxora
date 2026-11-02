@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect } from 'react'
+import { Suspense, lazy, memo, useDeferredValue, useEffect } from 'react'
 import { Shell } from '@/components/Shell'
 import { PendingReconciler } from '@/components/PendingReconciler'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -8,33 +8,22 @@ import { WalletPromptBanner } from '@/components/WalletPromptBanner'
 import { WalletEvents } from '@/hooks/useWallet'
 import { useRoute } from '@/lib/router'
 import { Dashboard } from '@/pages/Dashboard'
+import { PageLoader } from '@/components/Logo'
+import { prefetchAllViewsWhenIdle, viewLoaders } from '@/lib/viewLoaders'
 
-const Send = lazy(() => import('@/pages/Send').then((m) => ({ default: m.Send })))
-const Receive = lazy(() => import('@/pages/Receive').then((m) => ({ default: m.Receive })))
-const Swap = lazy(() => import('@/pages/Swap').then((m) => ({ default: m.Swap })))
-const Bridge = lazy(() => import('@/pages/Bridge').then((m) => ({ default: m.Bridge })))
-const Pay = lazy(() => import('@/pages/Pay').then((m) => ({ default: m.Pay })))
-const History = lazy(() => import('@/pages/History').then((m) => ({ default: m.History })))
-const Earn = lazy(() => import('@/pages/Earn').then((m) => ({ default: m.Earn })))
-const Govern = lazy(() => import('@/pages/Govern').then((m) => ({ default: m.Govern })))
+const Send = lazy(viewLoaders.send)
+const Receive = lazy(viewLoaders.receive)
+const Swap = lazy(viewLoaders.swap)
+const Bridge = lazy(viewLoaders.bridge)
+const Pay = lazy(viewLoaders.pay)
+const History = lazy(viewLoaders.history)
 
-export default function App() {
-  const { view, params, navigate } = useRoute()
+type RouteView = ReturnType<typeof useRoute>
 
-  useEffect(() => {
-    const titles: Record<string, string> = { dashboard: 'Dashboard', send: 'Send', receive: 'Receive', swap: 'Swap', bridge: 'Bridge', pay: 'Others Pay', history: 'History', earn: 'Earn', govern: 'Govern' }
-    document.title = `${titles[view]} · FLUXORA`
-  }, [view])
-
+/** The page for a route. Memoized so unrelated App renders do not re-render the page. */
+const Outlet = memo(function Outlet({ view, params, navigate }: Pick<RouteView, 'view' | 'params' | 'navigate'>) {
   return (
-    <Shell view={view} navigate={navigate}>
-      <WalletEvents />
-      <ConfigNotice />
-      <PendingReconciler />
-      <WalletWarmup />
-      <WalletPromptBanner />
-      <ErrorBoundary resetKey={view}>
-      <Suspense fallback={<div className="skeleton h-64 w-full" aria-busy="true" />}>
+    <>
       {view === 'dashboard' && <Dashboard navigate={navigate} />}
       {view === 'send' && <Send presetTo={params.get('to') ?? undefined} presetAmount={params.get('amount') ?? undefined} presetToken={params.get('token') ?? undefined} />}
       {view === 'receive' && <Receive />}
@@ -42,10 +31,42 @@ export default function App() {
       {view === 'bridge' && <Bridge />}
       {view === 'pay' && <Pay params={params} navigate={navigate} />}
       {view === 'history' && <History />}
-      {view === 'earn' && <Earn />}
-      {view === 'govern' && <Govern />}
-      </Suspense>
-      </ErrorBoundary>
+    </>
+  )
+})
+
+export default function App() {
+  const { view, params, navigate } = useRoute()
+  // The navigation highlight follows `view` at once. The page itself follows `shownView`, which switches only when
+  // the next page is ready, so the current page stays on screen instead of flashing a loader while a chunk loads.
+  const shownView = useDeferredValue(view)
+  const shownParams = useDeferredValue(params)
+  const switching = shownView !== view
+
+  useEffect(() => {
+    const titles: Record<string, string> = { dashboard: 'Dashboard', send: 'Send', receive: 'Receive', swap: 'Swap', bridge: 'Bridge', pay: 'Pay', history: 'History' }
+    document.title = `${titles[view]} · FLUXORA`
+  }, [view])
+
+  // Warm every page in the background once the first screen is done.
+  useEffect(() => prefetchAllViewsWhenIdle(), [])
+
+  return (
+    <Shell view={view} navigate={navigate}>
+      {/* Always-on services live outside the keyed page wrapper, so they mount once and are not restarted on every navigation. */}
+      <WalletEvents />
+      <ConfigNotice />
+      <PendingReconciler />
+      <WalletWarmup />
+      <WalletPromptBanner />
+      {switching && <div className="fx-progress" aria-hidden="true" />}
+      <div key={shownView} className="animate-rise">
+        <ErrorBoundary resetKey={shownView}>
+          <Suspense fallback={<PageLoader />}>
+            <Outlet view={shownView} params={shownParams} navigate={navigate} />
+          </Suspense>
+        </ErrorBoundary>
+      </div>
     </Shell>
   )
 }

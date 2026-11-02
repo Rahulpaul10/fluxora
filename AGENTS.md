@@ -18,16 +18,17 @@ Project memory for future agents. FLUXORA is a DeFi wallet on Arc mainnet (chain
 
 ## Layout
 
-- `contracts/src/` Solidity (FluxoraToken, Payments, Staking, Governance, Timelock). `contracts/test/` tests (+ helpers). `contracts/script/DeployFluxora.s.sol` deploy script. `contracts/deployments/` records written by `bun run deploy:record`. `contracts/foundry.toml` standalone config; root `foundry.toml` points at the same folders.
+- `contracts/src/` Solidity (FluxoraToken, FluxoraPayments, FluxoraPaymentsStandalone). `contracts/test/` tests (+ helpers). `contracts/script/DeployFluxora.s.sol` deploy script. `contracts/deployments/` records written by `bun run deploy:record`. `contracts/foundry.toml` standalone config; root `foundry.toml` points at the same folders.
 - `src/config/` centralized config: `networks.ts` (chains, RPC overrides via env, retry/failover, explorer links), `wallet.ts` (wagmi, connectors, query retry), `contracts.ts` (addresses from `VITE_FLUXORA_*_ADDRESS`, ABIs), `abis.generated.ts` (run `forge build && bun run gen:abis`).
 - `src/lib/` tokens, Uniswap routing (`uniswap-arc.ts`), fees, activity log, payments helpers, theme (per-page colors).
-- `src/hooks/` balances, prices, on-chain transfers, history, payments, proposals.
-- `src/pages/` Dashboard, Send, Receive, Swap, Bridge, Pay, History, Earn, Govern. `src/components/` shared UI.
+- `src/hooks/` balances, prices, on-chain transfers, history, payments.
+- `src/pages/` Dashboard, Send, Receive, Swap, Bridge, Pay, History. `src/components/` shared UI; `src/components/Logo.tsx` holds the FLUXORA marks (symbol, wordmark, lockup, loaders).
 - `docs/` DEPLOYMENT, CONFIGURATION, GITHUB, HOSTING guides.
 
 ## Status
 
 - Contracts: written, reviewed three rounds, tested. Not deployed (no addresses yet).
+- Performance: pages are lazy chunks listed once in `src/lib/viewLoaders.ts` and prefetched on idle and on nav hover/touch. The Circle bridge kit loads on demand through `src/lib/bridgeKit.ts` (never import it at module level). `App.tsx` keeps always-on services (wallet warmup, pending reconciler) outside the keyed page wrapper, so navigation does not restart them. Dashboard charts are a separate chunk (`DashboardCharts.tsx`). Do not add `placeholderData` to queries keyed by wallet address.
 - Swap uses Uniswap Universal Router 2.1.2 on Arc through Permit2. Bridge uses Circle App Kit (CCTP) with the forwarding service.
 
 ## Run

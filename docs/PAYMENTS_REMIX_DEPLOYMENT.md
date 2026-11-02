@@ -1,7 +1,6 @@
 # Deploy the FLUXORA Payments contract from Remix (Arc Mainnet)
 
-You deploy ONE contract, `FluxoraPaymentsStandalone`, with your own wallet. There is no token, governance, staking or
-timelock. The wallet app only needs this contract for **Others Pay**: paying an address with a receipt, payment
+You deploy ONE contract, `FluxoraPaymentsStandalone`, with your own wallet. There is no token contract here. The wallet app only needs this contract for the **Pay** page: paying an address with a receipt, payment
 requests, and payment history. Send, Swap and Bridge do not use any FLUXORA contract.
 
 > Mainnet transactions are real and irreversible. Nothing here was deployed or sent by Arc Studio. You deploy it
@@ -12,11 +11,11 @@ requests, and payment history. Send, Swap and Bridge do not use any FLUXORA cont
 
 | | |
 |---|---|
-| Path | `contracts/standalone/FluxoraPaymentsStandalone.sol` (one self-contained file, OpenZeppelin 5.6.1 inlined) |
+| Source | `contracts/src/FluxoraPaymentsStandalone.sol` (imports OpenZeppelin 5.6.1 from `node_modules`) |
+| Single file for Remix | not stored in the repository. Generate it when you need it: `forge flatten contracts/src/FluxoraPaymentsStandalone.sol -o FluxoraPaymentsStandalone.flat.sol` (OpenZeppelin 5.6.1 gets inlined) |
 | Contract name in Remix | `FluxoraPaymentsStandalone` |
-| Readable source | `contracts/src/FluxoraPaymentsStandalone.sol` (same code, with imports) |
 | ABI | `contracts/standalone/FluxoraPaymentsStandalone.abi.json` |
-| Where FLUXORA's own code starts | the line `/// @title FLUXORA Payments (standalone, self-administered)` (about line 3764); everything above it is OpenZeppelin |
+| Where FLUXORA's own code starts in the flattened file | the line `/// @title FLUXORA Payments (standalone, self-administered)`; everything above it is OpenZeppelin |
 
 ## Remix compiler settings
 
@@ -36,7 +35,7 @@ These settings produce bytecode identical to the Foundry build that the tests ra
 | Parameter | Value to enter | Meaning |
 |---|---|---|
 | `adminTransferDelay` | `172800` | 2 days. How long an admin handover must wait before it can be accepted. Allowed range: 86400 (1 day) to 2592000 (30 days). |
-| `initialTokens` | `["0x3600000000000000000000000000000000000000","0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1"]` | Tokens people can pay with: Arc USDC and EURC. Both were checked on Arc Mainnet (USDC and EURC, 6 decimals each). |
+| `initialTokens` | `["0x3600000000000000000000000000000000000000"]` | Tokens people can pay with: Arc USDC (6 decimals). The admin can add others later with `setTokenSupported`. |
 
 There is no admin parameter: **the wallet that deploys it (`msg.sender`) becomes the only admin and the first pauser.** In
 Remix, check that the "Account" shown is your wallet before you click Deploy. The fee starts at 0 and the fee recipient is
@@ -46,15 +45,17 @@ Remix passes the array as shown above (square brackets, double quotes, no spaces
 arguments, if an explorer asks for them:
 
 ```
-0x000000000000000000000000000000000000000000000000000000000002a300000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000020000000000000000000000003600000000000000000000000000000000000000000000000000000000000000bef5f6d51cb62b58e6a8f77868681825c6fe21c1
+0x000000000000000000000000000000000000000000000000000000000002a300000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000010000000000000000000000003600000000000000000000000000000000000000
 ```
 
-(Generated with `cast abi-encode "constructor(uint48,address[])" 172800 "[0x3600…0000,0xbEf5…21c1]"`.)
+(Generated with `cast abi-encode "constructor(uint48,address[])" 172800 "[0x3600000000000000000000000000000000000000]"`.)
 
 ## Step by step
 
-1. **Open Remix** (remix.ethereum.org). Create a file named `FluxoraPaymentsStandalone.sol` and paste the full contents
-   of `contracts/standalone/FluxoraPaymentsStandalone.sol` (or upload the file).
+1. **Generate the single file.** From the repository root run
+   `forge flatten contracts/src/FluxoraPaymentsStandalone.sol -o FluxoraPaymentsStandalone.flat.sol`.
+   **Open Remix** (remix.ethereum.org). Create a file named `FluxoraPaymentsStandalone.sol` and paste the full contents
+   of the generated file (or upload it).
 2. **Compile.** In the Solidity compiler tab choose `0.8.28`, open Advanced Configurations, set EVM version to
    `cancun`, tick Enable optimization with `200`. Compile. It should finish with no errors.
 3. **Connect your wallet.** In Deploy & Run choose Environment: `Injected Provider - MetaMask`. Make MetaMask use
@@ -71,7 +72,7 @@ arguments, if an explorer asks for them:
    bun run verify:payments --admin=0xYourWallet --address=0xTheNewContract
    ```
    Every line should say PASS: it checks the chain, that you are the admin and a pauser, the 2-day delay, that no fee
-   is active, that the contract is not paused, and that USDC and EURC are accepted.
+   is active, that the contract is not paused, and that USDC is accepted.
 8. **Connect the frontend** (next section), then **test with a very small payment** (for example 0.01 USDC)
    before sharing the app.
 
@@ -84,8 +85,7 @@ pay about 290k gas, create a request about 200k, pay a request about 320k, admin
 ## Connect it to the FLUXORA frontend
 
 1. **Address to add:** the contract address from step 6, as `VITE_FLUXORA_PAYMENTS_ADDRESS`. Nothing else is needed:
-   the other four `VITE_FLUXORA_*` addresses (token, staking, governance, timelock) stay empty and those features keep
-   showing "Contract Not Deployed". That is expected.
+   `VITE_FLUXORA_TOKEN_ADDRESS` can stay empty; the FLUX token is then simply not listed. That is expected.
 2. **Where:**
    - local / Arc Studio preview: add this line to `.env`, then restart the dev server:
      ```
@@ -124,7 +124,7 @@ pay about 290k gas, create a request about 200k, pay a request about 320k, admin
 
 Whether `explorer.arc.io` accepts source verification is not confirmed by Arc's documentation. If the contract page
 has "Verify & Publish":
-- method: Solidity (single file), upload `contracts/standalone/FluxoraPaymentsStandalone.sol`
+- method: Solidity (single file), upload the flattened file generated from `contracts/src/FluxoraPaymentsStandalone.sol`
 - compiler `0.8.28`, EVM version `cancun`, optimization yes, 200 runs, license MIT
 - contract name `FluxoraPaymentsStandalone`
 - constructor arguments: the hex string above

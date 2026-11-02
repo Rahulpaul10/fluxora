@@ -12,14 +12,11 @@ broadcast on mainnet (chain id 5042).
 
 | Contract | File | Role |
 | --- | --- | --- |
-| `FluxoraToken` | `contracts/src/FluxoraToken.sol` | FLUX, fixed supply of 1,000,000,000, burn, permit, voting. No mint, no owner. |
-| `FluxoraTimelock` | `contracts/src/FluxoraTimelock.sol` | Timelock with a 14-day execution window. Owns the admin roles of Payments and Staking. |
-| `FluxoraGovernance` | `contracts/src/FluxoraGovernance.sol` | Token-voting governor (timestamp clock). The only proposer on the timelock. |
+| `FluxoraToken` | `contracts/src/FluxoraToken.sol` | FLUX, fixed supply of 1,000,000,000, burn, permit. No mint, no owner. |
 | `FluxoraPayments` | `contracts/src/FluxoraPayments.sol` | Payments, payment requests, receipts. Never holds user funds. Optional fee, capped at 1%. |
-| `FluxoraStaking` | `contracts/src/FluxoraStaking.sol` | Stake FLUX, earn FLUX rewards funded by the rewards distributor. |
 
-`contracts/script/DeployFluxora.s.sol` deploys all five in order, wires the roles, and removes the deployer's temporary timelock
-admin role. It only runs on chain 5042 or 5042002, and it checks that the USDC predeploy reports `USDC` with 6 decimals.
+`contracts/script/DeployFluxora.s.sol` deploys both in order and confirms the payments roles. It only runs on chain 5042 or
+5042002, and it checks that the USDC predeploy reports `USDC` with 6 decimals.
 
 ## 1. Prerequisites
 
@@ -40,24 +37,13 @@ Find the Arc RPC URL in `src/config/networks.ts` (it comes from the built-in reg
 export ARC_RPC_URL=<Arc RPC URL>
 
 # Optional overrides (defaults in brackets)
-export FLUX_INITIAL_HOLDER=<address that receives the 1B FLUX>      # [the deployer]
-export TIMELOCK_DELAY=172800                                          # [2 days, seconds]
-export VOTING_DELAY=86400                                             # [1 day]
-export VOTING_PERIOD=259200                                           # [3 days]
-export PROPOSAL_THRESHOLD=1000000000000000000000000                   # [1,000,000 FLUX]
-export QUORUM_PERCENT=4                                               # [4]
-export STAKING_REWARDS_DURATION=2592000                               # [30 days]
-export REWARDS_DISTRIBUTOR=<address allowed to fund staking rewards>  # [the deployer]
-export PAUSER=<address allowed to pause Payments and Staking>         # [the deployer]
-export EURC_ADDRESS=<EURC address from docs.arc.io contract addresses> # [none]
+export FLUX_INITIAL_HOLDER=<address that receives the 1B FLUX>        # [the deployer]
+export PAYMENTS_ADMIN=<address that administers Payments, ideally a multisig>   # [the deployer]
+export PAUSER=<address allowed to pause Payments>                     # [the deployer]
 ```
 
-The script checks these values before it sends anything and reverts with a named error if one is unsafe:
-`PROPOSAL_THRESHOLD` must not exceed the 1B FLUX supply (otherwise nobody could ever propose),
-`QUORUM_PERCENT` must be 1 to 100, `VOTING_PERIOD` and `TIMELOCK_DELAY` must be at least 1 hour,
-and `STAKING_REWARDS_DURATION` must be 7 to 365 days. Before the deployer gives up its temporary
-timelock admin role, the script also confirms the governance roles and the timelock's admin role on
-Payments and Staking, so a half-wired deployment reverts instead of ending up locked.
+The script checks these values before it sends anything and reverts with a named error if one is unsafe (a zero address). After deploying, it confirms the admin and pauser roles on Payments, so a half-wired
+deployment reverts.
 
 ## 3. Test and rehearse
 
@@ -69,7 +55,7 @@ forge test                                      # run all contract tests
 forge script contracts/script/DeployFluxora.s.sol:DeployFluxora --rpc-url $ARC_RPC_URL --account fluxora-deployer
 ```
 
-Read the printed addresses and role table. Confirm the deployer holds no lasting admin role.
+Read the printed addresses and role table. Confirm the admin and pauser are the addresses you intended.
 
 ## 4. Broadcast (only when you are ready)
 
@@ -92,9 +78,6 @@ hosting provider's environment settings (see [CONFIGURATION.md](CONFIGURATION.md
 ```
 VITE_FLUXORA_TOKEN_ADDRESS=
 VITE_FLUXORA_PAYMENTS_ADDRESS=
-VITE_FLUXORA_STAKING_ADDRESS=
-VITE_FLUXORA_GOVERNANCE_ADDRESS=
-VITE_FLUXORA_TIMELOCK_ADDRESS=
 VITE_FLUXORA_DEPLOY_BLOCK=        # optional
 ```
 
@@ -109,7 +92,6 @@ settings from `contracts/foundry.toml` (solc 0.8.28, optimizer 200 runs, EVM `ca
 
 ## 7. After deployment
 
-1. **Fund staking rewards.** The rewards distributor approves FLUX to the Staking contract, then calls `notifyRewardAmount`. It needs at least one staker first.
-2. **Delegate to yourself.** FLUX only counts for voting after `delegate(yourAddress)`. The Govern page has a button.
-3. **Enable more payment tokens.** Payments accepts USDC and FLUX (and EURC if you set it). Adding a token is a governance proposal that calls `setTokenSupported` through the timelock; the Govern page has a template.
-4. **Hand over roles carefully.** The deployer's `PAUSER` and `REWARDS_DISTRIBUTOR` roles are operational roles. Move them to a multisig when you are ready.
+1. **Enable more payment tokens.** Payments accepts USDC and FLUX. The admin adds a token by calling `setTokenSupported`. Only add standard, non-rebasing tokens.
+2. **Hand over roles carefully.** If the admin and `PAUSER` are your deployer wallet, move them to a multisig when you are ready.
+3. **Check the result.** `bun run verify:deployment --admin=<your admin>` is read-only and sends nothing.

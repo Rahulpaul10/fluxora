@@ -16,7 +16,7 @@ import { parseTxError } from '@/lib/errors'
 import { recordActivity } from '@/lib/activity'
 import {
   PERMIT2, PERMIT2_DOMAIN, PERMIT2_TYPES, PRICE_IMPACT_BLOCK, PRICE_IMPACT_WARN, SLIPPAGE_DEFAULT_BPS, SLIPPAGE_MAX_BPS, SLIPPAGE_WARN_BPS,
-  UNISWAP_ERRORS, assertSlippage, bestQuote, buildSwap, minOut, permitNeeded,
+  UNISWAP_ERRORS, assertSlippage, bestQuote, buildSwap, findRoutes, minOut, permitNeeded,
 } from '@/lib/uniswap-arc'
 import { ArcGate } from '@/components/Gate'
 import { TokenButton, TokenPicker } from '@/components/TokenSelect'
@@ -96,16 +96,36 @@ function SwapForm() {
   const debouncedRaw = useDebounced(parsed.raw, 450)
   const sameToken = inSym === outSym
 
+  const pairKey = tokenIn && tokenOut ? `${tokenIn.address}:${tokenOut.address}` : ''
+
   const quote = useQuery({
     queryKey: ['swap-quote', tokenIn?.address, tokenOut?.address, debouncedRaw?.toString()],
     enabled: Boolean(client && tokenIn && tokenOut && debouncedRaw && !sameToken),
-    refetchInterval: 15_000,
+    // Only refresh a quote that worked: a pair with no pool is not hammered every 15 seconds.
+    refetchInterval: (query) => (query.state.status === 'error' ? false : 15_000),
     retry: false,
-    queryFn: () => {
+    // While a new amount is being priced, keep showing the previous quote for the SAME pair (dimmed), not a blank.
+    placeholderData: (previous) => previous,
+    queryFn: async () => {
       if (!client || !tokenIn || !tokenOut || !debouncedRaw) throw new Error('missing input')
-      return bestQuote(client, tokenIn.address, tokenOut.address, 'exactIn', debouncedRaw)
+      return { ...(await bestQuote(client, tokenIn.address, tokenOut.address, 'exactIn', debouncedRaw)), pairKey }
     },
   })
+
+  // Only when pricing failed: find out whether the pair has no pool at all, and which tokens it can trade with.
+  const partners = useQuery({
+    queryKey: ['swap-partners', tokenIn?.address],
+    enabled: Boolean(client && tokenIn && quote.isError && !sameToken),
+    staleTime: 5 * 60_000,
+    retry: 1,
+    queryFn: async () => {
+      if (!client || !tokenIn) return [] as string[]
+      const others = ARC_TOKENS.filter((t) => t.symbol !== tokenIn.symbol)
+      const found = await Promise.all(others.map(async (t) => ((await findRoutes(client, tokenIn.address, t.address)).length > 0 ? t.symbol : null)))
+      return found.filter((s): s is string => s !== null)
+    },
+  })
+  const noPool = Boolean(quote.isError && !sameToken && tokenOut && partners.isSuccess && !partners.data.includes(tokenOut.symbol))
 
   // Keep room for network fees when swapping USDC (gas is paid in the same USDC pool)
   const feeReserve = useQuery({
@@ -120,8 +140,9 @@ function SwapForm() {
     },
   })
 
-  const q = quote.data
-  const stale = parsed.raw !== debouncedRaw
+  // A quote from another pair (kept as a placeholder while switching tokens) is never used.
+  const q = parsed.raw !== undefined && quote.data && quote.data.pairKey === pairKey ? quote.data : undefined
+  const stale = parsed.raw !== debouncedRaw || quote.isPlaceholderData
   const impact = q?.priceImpact ?? 0
   const highImpact = impact > PRICE_IMPACT_BLOCK
   const reserveShort =
@@ -213,7 +234,7 @@ function SwapForm() {
         <div className="flex items-center justify-between">
           <span className="label">You pay</span>
           <button
-            className="text-xs font-semibold text-[var(--a)]"
+            className="-my-3.5 py-3.5 text-xs font-semibold text-[var(--a)]"
             onClick={() => rowIn?.raw !== undefined && tokenIn && setAmount(Amount.fromRaw(rowIn.raw, tokenIn.decimals).toString())}
           >
             Balance {rowIn?.raw === undefined || !tokenIn ? '…' : fmtToken(rowIn.raw, tokenIn.decimals)} · Max
@@ -243,19 +264,29 @@ function SwapForm() {
         <span className="label">You receive (estimated)</span>
         <div className="mt-2 flex items-center gap-3">
           <p className="min-w-0 flex-1 truncate font-display text-3xl font-semibold tabular text-white">
-            {quote.isFetching && !q ? <Spinner /> : q && tokenOut && !stale ? fmtToken(q.amountOut, tokenOut.decimals, 6) : '0.00'}
+            {quote.isFetching && !q ? <span className="skeleton inline-block h-8 w-40 align-middle" aria-busy="true" aria-label="Getting best price" /> : q && tokenOut ? <span className={stale ? 'opacity-50 transition-opacity' : 'transition-opacity'}>{fmtToken(q.amountOut, tokenOut.decimals, 6)}</span> : '0.00'}
           </p>
           <TokenButton token={tokenOut} onClick={() => setPicker('out')} />
         </div>
       </div>
 
       {sameToken && <Notice tone="warn">Choose two different tokens.</Notice>}
-      {quote.isError && !sameToken && debouncedRaw !== undefined && (
+      {noPool && tokenIn && tokenOut && (
+        <Notice tone="warn">
+          There is no Uniswap pool for {tokenIn.symbol} and {tokenOut.symbol} on Arc, so this pair cannot be swapped.{' '}
+          {partners.data && partners.data.length > 0
+            ? `${tokenIn.symbol} can be swapped with ${partners.data.join(', ')}.`
+            : `No live pool currently pairs ${tokenIn.symbol} with another supported token.`}
+        </Notice>
+      )}
+      {partners.isError && !sameToken && <Notice tone="warn">Could not check which pools exist. Check your connection and try again.</Notice>}
+      {quote.isError && !sameToken && partners.isFetching && <Notice tone="info">Checking which pools exist…</Notice>}
+      {quote.isError && !sameToken && !noPool && !partners.isFetching && debouncedRaw !== undefined && (
         <Notice tone="warn">No route at this size. No live pool can fill it, so no price is shown.</Notice>
       )}
 
-      {q && tokenIn && tokenOut && !stale && (
-        <div className="divide-y divide-white/5 rounded-2xl border border-white/5 px-4">
+      {q && tokenIn && tokenOut && (
+        <div className={`divide-y divide-white/5 rounded-2xl border border-white/5 px-4 transition-opacity ${stale ? 'opacity-50' : ''}`} aria-busy={stale}>
           <Row label="Exchange rate" value={rate !== undefined ? `1 ${tokenIn.symbol} ≈ ${rate.toLocaleString(undefined, { maximumSignificantDigits: 6 })} ${tokenOut.symbol}` : '—'} />
           <Row label="Route" value={`Uniswap ${q.route.version} · ${(q.route.feeFraction * 100).toFixed(2)}% fee`} />
           <Row

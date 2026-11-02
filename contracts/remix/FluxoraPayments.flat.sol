@@ -3262,7 +3262,7 @@ contract FluxoraPayments is AccessControl, Pausable, ReentrancyGuard {
     function pause() external onlyRole(PAUSER_ROLE) { _pause(); }
     function unpause() external onlyRole(PAUSER_ROLE) { _unpause(); }
 
-    /// @notice Governance is responsible for vetting exact-transfer token semantics.
+    /// @notice The admin is responsible for vetting exact-transfer token semantics.
     function setTokenSupported(address token, bool supported) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _setTokenSupported(token, supported);
     }

@@ -30,8 +30,6 @@ const CUSTOM: Record<string, string> = {
   ZeroAmount: 'The amount must be greater than zero.',
   MemoTooLong: 'The note is too long (140 bytes maximum).',
   EnforcedPause: 'This feature is paused by the contract admins.',
-  InsufficientStake: 'You are trying to withdraw more than you have staked.',
-  NoStakers: 'Rewards can only be added while someone is staking.',
   ERC20InsufficientBalance: 'Insufficient token balance.',
   ERC20InsufficientAllowance: 'Token approval is too low. Approve and try again.',
 }

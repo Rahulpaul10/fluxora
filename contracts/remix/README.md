@@ -1,10 +1,10 @@
 # Remix-ready sources
 
-Self-contained (flattened) copies of the five contracts in `../src`, with OpenZeppelin 5.6.1 inlined, for
+Self-contained (flattened) copies of the two contracts in `../src`, with OpenZeppelin 5.6.1 inlined, for
 pasting into Remix. They are generated, not hand-edited:
 
 ```
-for c in FluxoraToken FluxoraTimelock FluxoraGovernance FluxoraPayments FluxoraStaking; do
+for c in FluxoraToken FluxoraPayments; do
   forge flatten contracts/src/$c.sol -o contracts/remix/$c.flat.sol
 done
 ```

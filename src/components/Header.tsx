@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { NETWORKS, networkById, ARC_CHAIN_ID, asChainId, explorerAddress, isSupportedChain } from '@/config/networks'
 import { shortAddr } from '@/lib/format'
 import { ConnectionStatus } from './ConnectionStatus'
-import { LogoMark } from './Logo'
+import { Wordmark } from './Logo'
 
 function useDismiss(open: boolean, close: () => void) {
   const ref = useRef<HTMLDivElement>(null)
@@ -122,9 +122,9 @@ function WalletMenu() {
       {({ isConnected, isConnecting, show }) => {
         if (!isConnected || !address) {
           return (
-            <button onClick={show} className="btn-primary !min-h-[44px] !rounded-2xl !px-4 text-sm">
+            <button onClick={show} aria-label="Connect wallet" className="btn-primary !min-h-[44px] !rounded-2xl !px-3.5 text-sm sm:!px-4">
               <Plug size={16} />
-              {isConnecting ? 'Connecting…' : 'Connect wallet'}
+              {isConnecting ? 'Connecting…' : <>Connect<span className="max-[419px]:hidden">&nbsp;wallet</span></>}
             </button>
           )
         }
@@ -135,7 +135,8 @@ function WalletMenu() {
             trigger={
               <span className="flex items-center gap-2">
                 <span className="h-6 w-6 rounded-full" style={{ background: avatarGradient(address) }} />
-                <span className="font-mono text-[13px]">{shortAddr(address, 6, 4)}</span>
+                <span className="font-mono text-[13px] max-[419px]:hidden">{shortAddr(address, 6, 4)}</span>
+                <span className="font-mono text-[13px] min-[420px]:hidden">{shortAddr(address, 4, 3)}</span>
               </span>
             }
           >
@@ -186,11 +187,11 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-white/5 bg-navy-900/70 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 lg:px-8">
-        <span className="flex items-center gap-2.5 lg:invisible">
-          <LogoMark size={34} />
-          <span className="font-display text-lg font-bold tracking-[0.08em] text-white">FLUXORA</span>
+        <span className="shrink-0 lg:invisible" aria-label="FLUXORA">
+          {/* Narrow phones show the symbol only, so the wallet button always fits */}
+          <Wordmark size={32} textClassName="max-[459px]:hidden" />
         </span>
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
           <ConnectionStatus />
           <NetworkSelector />
           <WalletMenu />

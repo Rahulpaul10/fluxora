@@ -38,9 +38,6 @@ const addressOf = (name: string): string => {
 const contracts = {
   token: addressOf('FluxoraToken'),
   payments: addressOf('FluxoraPayments'),
-  staking: addressOf('FluxoraStaking'),
-  governance: addressOf('FluxoraGovernance'),
-  timelock: addressOf('FluxoraTimelock'),
 }
 const blocks = (data.receipts ?? []).map((r) => (r.blockNumber ? Number(BigInt(r.blockNumber)) : 0)).filter((n) => n > 0)
 const deployBlock = blocks.length ? Math.min(...blocks) : undefined
@@ -56,9 +53,6 @@ console.log(`Wrote ${out}\n`)
 console.log('Add these to your .env (and to your host\'s environment settings), then restart / redeploy:\n')
 console.log(`VITE_FLUXORA_TOKEN_ADDRESS=${contracts.token}`)
 console.log(`VITE_FLUXORA_PAYMENTS_ADDRESS=${contracts.payments}`)
-console.log(`VITE_FLUXORA_STAKING_ADDRESS=${contracts.staking}`)
-console.log(`VITE_FLUXORA_GOVERNANCE_ADDRESS=${contracts.governance}`)
-console.log(`VITE_FLUXORA_TIMELOCK_ADDRESS=${contracts.timelock}`)
 if (deployBlock) console.log(`VITE_FLUXORA_DEPLOY_BLOCK=${deployBlock}`)
 if (chainId !== '5042') {
   console.log('\nNote: the app is configured for Arc mainnet (5042). Addresses from another chain will not work in it.')

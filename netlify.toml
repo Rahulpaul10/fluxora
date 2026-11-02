@@ -7,15 +7,9 @@
 
 [build.environment]
   NODE_VERSION = "22"
-  # Public Arc token addresses (docs.arc.io contract addresses, each checked onchain: EURC, WETH, cirBTC).
-  # These are public values, not secrets. Without them the app hides those tokens.
-  VITE_ARC_EURC_ADDRESS = "0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1"
-  VITE_ARC_WETH_ADDRESS = "0x128cC466B61f542da60c70e3aA11c10e19B84EDB"
-  VITE_ARC_CIRBTC_ADDRESS = "0x171A4217b86A807A64eB94757Db6849fb4bDbAA0"
   # Set these in the Netlify UI (Site configuration > Environment variables), not here:
   #   VITE_WALLETCONNECT_PROJECT_ID, VITE_ARC_RPC_URL, VITE_ARC_EXPLORER_URL,
-  #   VITE_FLUXORA_TOKEN_ADDRESS, VITE_FLUXORA_PAYMENTS_ADDRESS, VITE_FLUXORA_STAKING_ADDRESS,
-  #   VITE_FLUXORA_GOVERNANCE_ADDRESS, VITE_FLUXORA_TIMELOCK_ADDRESS, VITE_FLUXORA_DEPLOY_BLOCK
+  #   VITE_FLUXORA_TOKEN_ADDRESS, VITE_FLUXORA_PAYMENTS_ADDRESS, VITE_FLUXORA_DEPLOY_BLOCK
   # Leave VITE_APP_URL empty: the app uses whatever domain serves it.
 
 # Single-page app: every path (for example /send or /pay?request=1) must load index.html.

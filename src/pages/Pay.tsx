@@ -31,7 +31,7 @@ export function Pay({ params, navigate }: { params: URLSearchParams; navigate: (
   return (
     <>
       <PageTitle
-        title="Others Pay"
+        title="Pay"
         subtitle="Pay any wallet, ask others to pay you with a link or QR code, and keep receipts."
       />
       <div className="mx-auto max-w-xl space-y-4">

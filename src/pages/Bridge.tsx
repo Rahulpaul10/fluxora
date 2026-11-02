@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { erc20Abi, isAddress, type EIP1193Provider } from 'viem'
 import { useAccount, useReadContract, useSwitchChain } from 'wagmi'
 import { useQuery } from '@tanstack/react-query'
-import { createViemAdapterFromProvider } from '@circle-fin/adapter-viem-v2'
-import { AppKit, type BridgeResult } from '@circle-fin/app-kit'
+import type { createViemAdapterFromProvider } from '@circle-fin/adapter-viem-v2'
+import type { AppKit, BridgeResult } from '@circle-fin/app-kit'
+import { loadBridgeKit, loadViemAdapter } from '@/lib/bridgeKit'
 import { ArrowDown, ArrowRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { getUsdc } from '@/onchain-facts'
@@ -15,8 +16,6 @@ import { recordActivity, updateActivity } from '@/lib/activity'
 import { Card, ExplorerLink, Notice, PageTitle, Row, Segmented, Spinner, TokenIcon } from '@/components/ui'
 import { USDC } from '@/lib/tokens'
 import { ConnectKitButton } from 'connectkit'
-
-const kit = new AppKit()
 
 type Speed = 'FAST' | 'SLOW'
 interface StepView {
@@ -95,6 +94,7 @@ export function Bridge() {
   const getAdapter = async () => {
     if (!connector) throw new Error('Wallet not connected')
     const provider = (await connector.getProvider()) as EIP1193Provider
+    const { createViemAdapterFromProvider } = await loadViemAdapter()
     const adapter = await createViemAdapterFromProvider({ provider })
     adapterRef.current = adapter
     return adapter
@@ -114,7 +114,7 @@ export function Bridge() {
     staleTime: 20_000,
     queryFn: async () => {
       if (!debounced.raw || !destination) throw new Error('missing input')
-      const adapter = await getAdapter()
+      const [adapter, kit] = await Promise.all([getAdapter(), loadBridgeKit()])
       return kit.estimateBridge({
         from: { adapter, chain: from.kit },
         to: { chain: to.kit, recipientAddress: destination, useForwarder: true },
@@ -158,8 +158,10 @@ export function Bridge() {
         }
       }
     }
-    kit.on('*', handler)
+    let kit: AppKit | undefined
     try {
+      kit = await loadBridgeKit()
+      kit.on('*', handler)
       const adapter = adapterRef.current ?? (await getAdapter())
       const res = await kit.bridge({
         from: { adapter, chain: from.kit },
@@ -179,7 +181,7 @@ export function Bridge() {
       if (p.rejected) toast('Bridge cancelled')
       else setError(p.message)
     } finally {
-      kit.off('*', handler)
+      kit?.off('*', handler)
       setRunning(false)
     }
   }
@@ -189,6 +191,7 @@ export function Bridge() {
     setRunning(true)
     setError(undefined)
     try {
+      const kit = await loadBridgeKit()
       const res = await kit.retryBridge(result, { from: adapterRef.current, to: adapterRef.current })
       setResult(res)
       setSteps(res.steps.map((s) => ({ name: s.name, state: s.state, txHash: s.txHash, explorerUrl: s.explorerUrl })))
@@ -228,7 +231,7 @@ export function Bridge() {
           <div className="flex items-center justify-between">
             <label className="label" htmlFor="bridge-amt">Amount</label>
             <button
-              className="text-xs font-semibold text-[var(--a)]"
+              className="-my-3.5 py-3.5 text-xs font-semibold text-[var(--a)]"
               onClick={() => balance.data !== undefined && setAmount(Amount.fromRaw(balance.data, USDC.decimals).toString())}
             >
               Balance {balance.data === undefined ? (isConnected ? '…' : '—') : fmtToken(balance.data, USDC.decimals)} · Max

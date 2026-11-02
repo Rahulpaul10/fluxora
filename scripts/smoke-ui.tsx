@@ -53,7 +53,7 @@ const { default: App } = await import('../src/App')
 
 // A neutral, public address with no keys held here: read-only data only.
 const ACCOUNT = '0x000000000000000000000000000000000000dEaD' as const
-const ALL_ROUTES = ['/', '/send', '/receive', '/swap', '/bridge', '/pay', '/history', '/earn', '/govern', '/pay?to=0x000000000000000000000000000000000000dEaD&amount=1&token=USDC']
+const ALL_ROUTES = ['/', '/send', '/receive', '/swap', '/bridge', '/pay', '/history', '/pay?to=0x000000000000000000000000000000000000dEaD&amount=1&token=USDC']
 
 const ROUTES = process.env.ONLY ? ALL_ROUTES.filter((r) => process.env.ONLY?.split(',').includes(r)) : ALL_ROUTES
 const WAIT = Number(process.env.WAIT ?? 0)

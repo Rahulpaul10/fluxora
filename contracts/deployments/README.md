@@ -13,10 +13,7 @@ After you deploy, run `bun run deploy:record` from the repository root. It reads
   "deployBlock": null,
   "contracts": {
     "token": "",
-    "payments": "",
-    "staking": "",
-    "governance": "",
-    "timelock": ""
+    "payments": ""
   }
 }
 ```

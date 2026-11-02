@@ -1,8 +1,6 @@
 import { zeroAddress, type Address } from 'viem'
 import { getUsdc } from '@/onchain-facts'
 import { ARC_CHAIN_ID } from '@/config/networks'
-import { envAddress } from './env'
-import { reportConfigIssue } from './configIssues'
 import { FLUXORA } from '@/config/contracts'
 
 export interface TokenInfo {
@@ -26,24 +24,27 @@ export const USDC: TokenInfo = {
 }
 
 /**
- * Tokens FLUXORA supports on Arc mainnet. Addresses other than USDC come from docs.arc.io
- * (stored in .env as VITE_ARC_*) or from the user's own FLUXORA deployment. A token whose address is
- * not configured is simply not offered. Decimals are confirmed onchain by the balance hook.
+ * Existing Arc mainnet tokens that have live Uniswap pools, so Swap works without any FLUXORA token.
+ * Addresses come from the official Arc contract list (https://docs.arc.io/arc/references/contract-addresses).
+ * Symbol and decimals were confirmed onchain, and each token was checked for a live Uniswap v3/v4 pool against
+ * USDC. Nothing here is deployed or issued by FLUXORA, and no environment variable is needed.
+ *
+ * USYC (0x8a5D989Bbb96929F689B0200f435f53dA42bF490) is deliberately left out: it has no Uniswap pool on Arc
+ * and is restricted to allowlisted institutions.
  */
-function optional(symbol: string, name: string, decimals: number, color: string, raw: unknown): TokenInfo[] {
-  const address = envAddress(raw)
-  if (!address) {
-    reportConfigIssue(`VITE_ARC_${symbol.toUpperCase()}_ADDRESS is missing or not a valid address, so ${symbol} is hidden from balances, Send and Swap.`)
-    return []
-  }
-  return [{ symbol, name, address, decimals, color }]
-}
+export const EURC: TokenInfo = { symbol: 'EURC', name: 'Euro Coin', address: '0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1', decimals: 6, color: '#3B82F6' }
+export const WETH: TokenInfo = { symbol: 'WETH', name: 'Wrapped Ether', address: '0x128cC466B61f542da60c70e3aA11c10e19B84EDB', decimals: 18, color: '#627EEA' }
+export const CIRBTC: TokenInfo = { symbol: 'cirBTC', name: 'Circle Wrapped Bitcoin', address: '0x171A4217b86A807A64eB94757Db6849fb4bDbAA0', decimals: 8, color: '#F7931A' }
 
+/**
+ * Tokens FLUXORA supports on Arc: USDC plus the verified tokens above. FLUX is added only if you have deployed
+ * your own FluxoraToken and set VITE_FLUXORA_TOKEN_ADDRESS. Decimals are re-read onchain by the balance hook.
+ */
 export const ARC_TOKENS: TokenInfo[] = [
   USDC,
-  ...optional('EURC', 'Euro Coin', 6, '#3B82F6', import.meta.env.VITE_ARC_EURC_ADDRESS),
-  ...optional('WETH', 'Wrapped Ether', 18, '#627EEA', import.meta.env.VITE_ARC_WETH_ADDRESS),
-  ...optional('cirBTC', 'Circle Wrapped Bitcoin', 8, '#F7931A', import.meta.env.VITE_ARC_CIRBTC_ADDRESS),
+  EURC,
+  WETH,
+  CIRBTC,
   ...(FLUXORA.token
     ? [{ symbol: 'FLUX', name: 'FLUXORA', address: FLUXORA.token, decimals: 18, color: '#8B5CF6' } satisfies TokenInfo]
     : []),

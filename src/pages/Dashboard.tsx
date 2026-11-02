@@ -1,5 +1,4 @@
-import { useMemo, useState } from 'react'
-import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts'
+import { Suspense, lazy, useMemo } from 'react'
 import { CheckCircle2, CircleSlash, ShieldCheck, Sparkles, Waves } from 'lucide-react'
 import { useAccount } from 'wagmi'
 import { useTokenBalances, useTokenPrices } from '@/hooks/useBalances'
@@ -10,13 +9,19 @@ import { USDC } from '@/lib/tokens'
 import { explorerAddress, explorerTx, ARC_CHAIN_ID } from '@/config/networks'
 import { CONTRACT_DEFINITIONS } from '@/config/contracts'
 import { VIEW_THEMES } from '@/lib/theme'
+import { prefetchView } from '@/lib/viewLoaders'
 import type { View } from '@/lib/router'
 import { Card, CopyButton, ExplorerLink, Notice, Spinner, TokenIcon } from '@/components/ui'
 import { ConnectPanel } from '@/components/Gate'
+import { Wordmark } from '@/components/Logo'
 import { ConnectionStatus } from '@/components/ConnectionStatus'
 import { HistoryKindBadge } from '@/components/HistoryKindBadge'
 
-const PALETTE = ['#8257FF', '#27D9FF', '#FF55B8', '#20D6A0', '#FFB04D']
+const AllocationDonut = lazy(() => import('@/components/DashboardCharts').then((m) => ({ default: m.AllocationDonut })))
+const FlowBars = lazy(() => import('@/components/DashboardCharts').then((m) => ({ default: m.FlowBars })))
+
+/** Placeholder with the final size, so the layout does not jump when the chart arrives. */
+const ChartSkeleton = ({ round }: { round?: boolean }) => <div className={`skeleton h-full w-full ${round ? '!rounded-full' : ''}`} aria-busy="true" />
 const ACTIONS: View[] = ['send', 'receive', 'swap', 'bridge', 'pay']
 
 const HERO_BG =
@@ -26,8 +31,9 @@ function Landing() {
   return (
     <div className="space-y-6">
       <div className="glass relative overflow-hidden rounded-[32px] p-6 sm:p-10" style={{ background: HERO_BG }}>
-        <div className="relative grid items-center gap-8 lg:grid-cols-5">
+        <div className="relative grid items-center gap-8 sm:grid-cols-2">
           <div className="lg:col-span-3">
+            <Wordmark size={40} className="mb-6" />
             <span className="pill"><Sparkles size={13} className="text-neon" /> Live on Arc mainnet</span>
             <h1 className="mt-4 text-balance font-display text-4xl font-bold leading-[1.05] tracking-[-0.04em] text-white sm:text-6xl">
               One Wallet.
@@ -73,7 +79,6 @@ export function Dashboard({ navigate }: { navigate: (v: View) => void }) {
   const balances = useTokenBalances()
   const prices = useTokenPrices()
   const { rows, transfers } = useHistoryRows()
-  const [hover, setHover] = useState<number>()
 
   const valued = useMemo(
     () =>
@@ -89,7 +94,7 @@ export function Dashboard({ navigate }: { navigate: (v: View) => void }) {
   const total = valued.reduce((sum, r) => sum + (r.value ?? 0n), 0n)
   const unpriced = valued.filter((r) => r.raw !== undefined && r.raw > 0n && r.value === null)
   const totalNum = Number(total) / 10 ** USDC.decimals
-  const chartData = valued.filter((r) => r.value && r.value > 0n).map((r) => ({ name: r.token.symbol, value: Number(r.value) / 10 ** USDC.decimals }))
+  const chartData = useMemo(() => valued.filter((r) => r.value && r.value > 0n).map((r) => ({ name: r.token.symbol, value: Number(r.value) / 10 ** USDC.decimals })), [valued])
 
   // Real money flow: USDC in/out from the transfer logs we actually read, grouped into time buckets
   const flow = useMemo(() => {
@@ -111,8 +116,6 @@ export function Dashboard({ navigate }: { navigate: (v: View) => void }) {
 
   if (!isConnected || !address) return <Landing />
 
-  const active = hover !== undefined ? chartData[hover] : undefined
-
   return (
     <div className="space-y-5">
       {!onArc && (
@@ -127,7 +130,7 @@ export function Dashboard({ navigate }: { navigate: (v: View) => void }) {
           <div className="min-w-0 md:col-span-3">
             <p className="label">Total wallet balance</p>
             <p className="mt-2 break-words font-display text-5xl font-bold tracking-[-0.045em] text-white tabular sm:text-7xl">
-              {balances.isLoading || prices.isLoading ? <Spinner className="inline" /> : <>${fmtUsd(total, USDC.decimals)}</>}
+              {balances.isLoading || prices.isLoading ? <span className="skeleton inline-block h-12 w-56 align-middle sm:h-16 sm:w-80" aria-busy="true" aria-label="Loading balance" /> : <>${fmtUsd(total, USDC.decimals)}</>}
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <span className="pill font-mono">{shortAddr(address)} <CopyButton value={address} label="Copy address" /></span>
@@ -142,24 +145,14 @@ export function Dashboard({ navigate }: { navigate: (v: View) => void }) {
           </div>
 
           <div className="relative mx-auto h-52 w-52 md:col-span-2 md:h-60 md:w-60">
-            {chartData.length === 0 ? (
+            {balances.isLoading || prices.isLoading ? (
+              <ChartSkeleton round />
+            ) : chartData.length === 0 ? (
               <div className="flex h-full items-center justify-center rounded-full border border-dashed border-white/15 p-8 text-center text-xs text-slate-400">No priced holdings yet</div>
             ) : (
-              <>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={chartData} dataKey="value" nameKey="name" innerRadius="66%" outerRadius="94%" paddingAngle={4} cornerRadius={8} stroke="none" onMouseEnter={(_, i) => setHover(i)} onMouseLeave={() => setHover(undefined)}>
-                      {chartData.map((d, i) => (
-                        <Cell key={d.name} fill={PALETTE[i % PALETTE.length]} opacity={hover === undefined || hover === i ? 1 : 0.35} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-                  <span className="label">{active ? active.name : 'Allocation'}</span>
-                  <span className="font-display text-2xl font-bold tabular">{active && totalNum > 0 ? `${((active.value / totalNum) * 100).toFixed(1)}%` : `${chartData.length} asset${chartData.length === 1 ? '' : 's'}`}</span>
-                </div>
-              </>
+              <Suspense fallback={<ChartSkeleton round />}>
+                <AllocationDonut data={chartData} total={totalNum} />
+              </Suspense>
             )}
           </div>
         </div>
@@ -170,11 +163,11 @@ export function Dashboard({ navigate }: { navigate: (v: View) => void }) {
             const t = VIEW_THEMES[v]
             const Icon = t.icon
             return (
-              <button key={v} onClick={() => navigate(v)} className="lift glass-inner group flex min-h-[84px] flex-col items-center justify-center gap-2 rounded-2xl px-1 text-[11px] font-semibold text-slate-100 sm:text-sm">
+              <button key={v} onClick={() => navigate(v)} onPointerEnter={() => prefetchView(v)} onTouchStart={() => prefetchView(v)} className="lift glass-inner group flex min-h-[84px] flex-col items-center justify-center gap-2 rounded-2xl px-1 text-[11px] font-semibold text-slate-100 sm:text-sm">
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl text-white transition group-hover:scale-110" style={{ background: t.gradient }}>
                   <Icon size={19} />
                 </span>
-                {t.label === 'Others Pay' ? 'Pay' : t.label}
+                {t.label}
               </button>
             )
           })}
@@ -198,7 +191,7 @@ export function Dashboard({ navigate }: { navigate: (v: View) => void }) {
                   <span className="pill tabular">{share.toFixed(1)}%</span>
                 </div>
                 <p className="mt-4 truncate font-display text-2xl font-bold tabular text-white">{r.raw === undefined ? '—' : fmtToken(r.raw, r.token.decimals, 4)}</p>
-                <p className="text-xs text-slate-400">{r.value === null ? (r.raw === 0n ? '$0.00' : 'No live price') : `$${fmtUsd(r.value, USDC.decimals)}`}</p>
+                <p className="text-xs text-slate-400">{prices.isLoading || r.raw === undefined ? <span className="skeleton inline-block h-3.5 w-16 align-middle" aria-busy="true" /> : r.value === null ? (r.raw === 0n ? '$0.00' : 'No live price') : `$${fmtUsd(r.value, USDC.decimals)}`}</p>
                 <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
                   <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.max(share, r.raw ? 2 : 0)}%`, background: `linear-gradient(90deg, ${r.token.color}, #fff6)` }} />
                 </div>
@@ -208,8 +201,8 @@ export function Dashboard({ navigate }: { navigate: (v: View) => void }) {
         </div>
       </section>
 
-      <div className="grid gap-5 lg:grid-cols-5">
-        <Card className="lg:col-span-3">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <Card className="min-w-0 lg:col-span-3">
           <div className="mb-3 flex items-center justify-between">
             <p className="label flex items-center gap-2"><Waves size={14} className="text-neon" /> USDC money flow</p>
             <span className="text-xs text-slate-500">from recent blocks</span>
@@ -220,14 +213,9 @@ export function Dashboard({ navigate }: { navigate: (v: View) => void }) {
             <p className="py-12 text-center text-sm text-slate-400">No USDC movement in the recent blocks scanned.</p>
           ) : (
             <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={flow} barGap={4}>
-                  <XAxis dataKey="label" tick={{ fill: '#8b93b8', fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <Tooltip cursor={{ fill: 'rgba(255,255,255,.05)' }} contentStyle={{ background: '#141A2E', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 14, color: '#fff' }} formatter={(v) => `${Number(v).toFixed(2)} USDC`} />
-                  <Bar dataKey="In" fill="#20D6A0" radius={[8, 8, 0, 0]} />
-                  <Bar dataKey="Out" fill="#FF55B8" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <Suspense fallback={<ChartSkeleton />}>
+                <FlowBars data={flow} />
+              </Suspense>
             </div>
           )}
           <div className="mt-2 flex gap-4 text-xs text-slate-300">
@@ -236,10 +224,10 @@ export function Dashboard({ navigate }: { navigate: (v: View) => void }) {
           </div>
         </Card>
 
-        <Card className="lg:col-span-2">
+        <Card className="min-w-0 lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
             <p className="label">Recent transactions</p>
-            <button className="text-sm font-medium text-neon hover:brightness-125" onClick={() => navigate('history')}>View all</button>
+            <button className="-my-3 min-h-[44px] px-1 text-sm font-medium text-neon hover:brightness-125" onClick={() => navigate('history')}>View all</button>
           </div>
           {transfers.isLoading ? (
             <p className="flex items-center gap-2 py-8 text-sm text-slate-400"><Spinner /> Reading recent blocks…</p>
@@ -265,7 +253,7 @@ export function Dashboard({ navigate }: { navigate: (v: View) => void }) {
       {/* FLUXORA contracts status: honest about what is deployed */}
       <Card>
         <p className="label mb-3">FLUXORA contracts</p>
-        <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+        <ul className="grid gap-2 sm:grid-cols-2">
           {Object.values(CONTRACT_DEFINITIONS).map((c) => (
             <li key={c.name} className="glass-inner flex items-center gap-2.5 rounded-2xl p-3">
               {c.address ? <CheckCircle2 size={18} className="shrink-0 text-flux-green" /> : <CircleSlash size={18} className="shrink-0 text-slate-500" />}

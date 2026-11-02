@@ -18,7 +18,7 @@ contract FluxoraPaymentsStandaloneAdminTest is FluxoraPaymentsStandaloneTestBase
         assertTrue(pay.hasRole(pay.DEFAULT_ADMIN_ROLE(), admin));
         assertTrue(pay.hasRole(pay.PAUSER_ROLE(), pauser));
         assertTrue(pay.supportedTokens(address(usdc)));
-        assertFalse(pay.supportedTokens(address(eurc)));
+        assertFalse(pay.supportedTokens(address(tokenB)));
         assertEq(pay.nextPaymentId(), 1);
         assertEq(pay.nextRequestId(), 1);
         assertEq(pay.feeBps(), 0);
@@ -89,22 +89,22 @@ contract FluxoraPaymentsStandaloneAdminTest is FluxoraPaymentsStandaloneTestBase
     // ------------------------------------------------------------ setTokenSupported
     function test_AdminSetsTokenSupportedAndEmits() public {
         vm.expectEmit(true, false, false, true, address(pay));
-        emit FluxoraPaymentsStandalone.TokenSupportUpdated(address(eurc), true);
+        emit FluxoraPaymentsStandalone.TokenSupportUpdated(address(tokenB), true);
         vm.prank(admin);
-        pay.setTokenSupported(address(eurc), true);
-        assertTrue(pay.supportedTokens(address(eurc)));
+        pay.setTokenSupported(address(tokenB), true);
+        assertTrue(pay.supportedTokens(address(tokenB)));
 
         vm.expectEmit(true, false, false, true, address(pay));
-        emit FluxoraPaymentsStandalone.TokenSupportUpdated(address(eurc), false);
+        emit FluxoraPaymentsStandalone.TokenSupportUpdated(address(tokenB), false);
         vm.prank(admin);
-        pay.setTokenSupported(address(eurc), false);
-        assertFalse(pay.supportedTokens(address(eurc)));
+        pay.setTokenSupported(address(tokenB), false);
+        assertFalse(pay.supportedTokens(address(tokenB)));
     }
 
     function test_RevertSetTokenSupportedNonAdmin() public {
         vm.prank(alice);
         vm.expectRevert(_unauth(alice, bytes32(0)));
-        pay.setTokenSupported(address(eurc), true);
+        pay.setTokenSupported(address(tokenB), true);
     }
 
     function test_RevertSetTokenSupportedZeroOrEoa() public {
@@ -138,10 +138,10 @@ contract FluxoraPaymentsStandaloneAdminTest is FluxoraPaymentsStandaloneTestBase
 
     function test_NewlyAllowlistedTokenWorks() public {
         vm.prank(admin);
-        pay.setTokenSupported(address(eurc), true);
+        pay.setTokenSupported(address(tokenB), true);
         vm.prank(alice);
-        pay.pay(address(eurc), bob, 10, bytes32(0), "", 0);
-        assertEq(eurc.balanceOf(bob), 10);
+        pay.pay(address(tokenB), bob, 10, bytes32(0), "", 0);
+        assertEq(tokenB.balanceOf(bob), 10);
     }
 
     // ------------------------------------------------------------ fee config

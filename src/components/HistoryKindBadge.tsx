@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { ArrowDownToLine, ArrowLeftRight, ArrowUpRight, Coins, Landmark, Receipt, Vote, Check } from 'lucide-react'
+import { ArrowDownToLine, ArrowLeftRight, ArrowUpRight, Landmark, Receipt, Check } from 'lucide-react'
 import type { HistoryKind } from '@/hooks/useHistoryRows'
 
 const META: Record<HistoryKind, { label: string; icon: typeof ArrowUpRight; tone: string }> = {
@@ -9,8 +9,6 @@ const META: Record<HistoryKind, { label: string; icon: typeof ArrowUpRight; tone
   bridge: { label: 'Bridge', icon: Landmark, tone: 'bg-volt/20 text-volt' },
   payment: { label: 'Payment', icon: Receipt, tone: 'bg-amber-400/15 text-amber-300' },
   request: { label: 'Request', icon: Receipt, tone: 'bg-amber-400/15 text-amber-300' },
-  stake: { label: 'Stake', icon: Coins, tone: 'bg-flux-green/15 text-flux-green' },
-  govern: { label: 'Govern', icon: Vote, tone: 'bg-volt/20 text-volt' },
   approve: { label: 'Approve', icon: Check, tone: 'bg-white/10 text-slate-300' },
   transfer: { label: 'Transfer', icon: ArrowLeftRight, tone: 'bg-white/10 text-slate-300' },
 }

@@ -21,12 +21,8 @@ phrase or API secret in any of them.
 | `VITE_ARC_EXPLORER_URL` | no | Override the Arc explorer base URL |
 | `VITE_RPC_URL_<chainId>` | no | Override the RPC for any other configured network, e.g. `VITE_RPC_URL_8453` |
 | `VITE_EXPLORER_URL_<chainId>` | no | Override the explorer for any other network |
-| `VITE_ARC_EURC_ADDRESS`, `VITE_ARC_WETH_ADDRESS`, `VITE_ARC_CIRBTC_ADDRESS` | yes for those tokens | Arc token addresses from docs.arc.io/arc/references/contract-addresses |
 | `VITE_FLUXORA_TOKEN_ADDRESS` | after you deploy | FLUXORA token |
 | `VITE_FLUXORA_PAYMENTS_ADDRESS` | after you deploy | FLUXORA Payments |
-| `VITE_FLUXORA_STAKING_ADDRESS` | after you deploy | FLUXORA Staking |
-| `VITE_FLUXORA_GOVERNANCE_ADDRESS` | after you deploy | FLUXORA Governance |
-| `VITE_FLUXORA_TIMELOCK_ADDRESS` | after you deploy | FLUXORA Timelock |
 | `VITE_FLUXORA_DEPLOY_BLOCK` | no | Block of the deployment |
 
 Vite reads `.env` only at startup: restart `bun run dev` after editing it. On Vercel or Netlify, set the same names in the
@@ -44,15 +40,15 @@ https://explorer.arc.io. Defaults come from the built-in onchain registry. The R
 - **Validation**: the app detects the wallet's network. On an unsupported or non-Arc network, transaction pages tell you and offer "Switch to Arc"; nothing is sent until you switch.
 
 To add a network later, add its viem chain to `NETWORKS` in `src/config/networks.ts` and to the chain tuple and transports in
-`src/config/wallet.ts`. Features that need liquidity or contracts (Send, Swap, Pay, Earn, Govern) stay on the home network; other
+`src/config/wallet.ts`. Features that need liquidity or contracts (Send, Swap, Pay) stay on the home network; other
 networks appear in the selector as bridge endpoints.
 
 ## Contract addresses
 
-Set the five `VITE_FLUXORA_*_ADDRESS` variables after you deploy (see [DEPLOYMENT.md](DEPLOYMENT.md)). Invalid or empty values
+Set the `VITE_FLUXORA_TOKEN_ADDRESS` and `VITE_FLUXORA_PAYMENTS_ADDRESS` variables after you deploy (see [DEPLOYMENT.md](DEPLOYMENT.md)). Invalid or empty values
 are treated as not configured. The app then:
 
-- shows **Contract Not Deployed** (with the variable name) on Earn, Govern, and the payment-receipt and request tools,
+- shows **Contract Not Deployed** (with the variable name) on the payment-receipt and request tools,
 - marks the contract as not deployed on the Dashboard,
 - never uses a placeholder address and never fakes data.
 
@@ -60,7 +56,7 @@ Payments with a plain transfer (Send) and everything on Swap and Bridge work wit
 
 ## Swap and Bridge scope
 
-- **Swap** uses Uniswap v3/v4 pools on Arc through the Universal Router. It needs real liquidity: pairs with no live pool show "No route".
+- **Swap** uses Uniswap v3/v4 pools on Arc through the Universal Router. It needs real liquidity: pairs with no live pool say so. Swappable tokens are USDC, EURC, WETH and cirBTC (fixed, verified Arc addresses in `src/lib/tokens.ts`, no environment variables). The pairs that had live pools when last checked are USDC/EURC, USDC/WETH, USDC/cirBTC and WETH/cirBTC; EURC has no pool with WETH or cirBTC. FLUX joins the list only if you deploy your own token.
 - **Bridge** uses Circle CCTP (App Kit) between Arc, Ethereum, Base, Arbitrum One, OP Mainnet, Polygon and Avalanche. Routes, fees and timing come from Circle's live quote.
 
 

@@ -6,7 +6,7 @@ import type { Address, Hex } from 'viem'
  * (send, swap, bridge, payment...). It stores only public data (hashes, labels). Status is never trusted:
  * it is set from real receipts, and onchain history is shown alongside it.
  */
-export type ActivityKind = 'send' | 'swap' | 'bridge' | 'payment' | 'request' | 'stake' | 'govern' | 'approve'
+export type ActivityKind = 'send' | 'swap' | 'bridge' | 'payment' | 'request' | 'approve'
 /** dropped = the network never knew this hash after a long wait (replaced, dropped or never broadcast) */
 export type ActivityStatus = 'pending' | 'success' | 'failed' | 'dropped'
 

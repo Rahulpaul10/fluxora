@@ -19,7 +19,7 @@ export function ConnectionStatus({ variant = 'dot' }: { variant?: 'dot' | 'card'
   if (variant === 'dot') {
     return (
       <span
-        className="pill !px-2.5"
+        className="pill !px-2.5 max-[379px]:hidden"
         title={`${HOME_NETWORK.name} RPC (${h.host}): ${tone.label}${h.latency ? ` · ${h.latency} ms` : ''}`}
         role="status"
         aria-label={`${HOME_NETWORK.name} network ${tone.label}`}
@@ -37,7 +37,7 @@ export function ConnectionStatus({ variant = 'dot' }: { variant?: 'dot' | 'card'
           <span className={clsx('relative h-2.5 w-2.5 rounded-full', tone.dot, h.status === 'online' && 'dot-live')} />
           {HOME_NETWORK.name} · {tone.label}
         </span>
-        <button onClick={h.retry} className="rounded-lg p-1.5 text-slate-400 hover:text-white" aria-label="Retry connection check" disabled={h.retrying}>
+        <button onClick={h.retry} className="-m-2 flex h-11 w-11 items-center justify-center rounded-lg text-slate-400 hover:text-white" aria-label="Retry connection check" disabled={h.retrying}>
           <RefreshCw size={14} className={clsx(h.retrying && 'animate-spin')} />
         </button>
       </div>

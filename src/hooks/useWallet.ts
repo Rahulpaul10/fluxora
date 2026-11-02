@@ -109,7 +109,7 @@ export function WalletEvents() {
     if (prevChain.current !== undefined && chainId !== undefined && prevChain.current !== chainId) {
       const name = networkById(chainId)?.name
       if (!name) toast.warning(`Your wallet moved to an unsupported network (chain ${chainId}). Switch to Arc Mainnet.`)
-      else if (chainId !== ARC_CHAIN_ID) toast(`Wallet network: ${name}. Switch to Arc Mainnet for Send, Swap, Pay, Earn and Govern.`)
+      else if (chainId !== ARC_CHAIN_ID) toast(`Wallet network: ${name}. Switch to Arc Mainnet for Send, Swap and Pay.`)
       else toast.success('Wallet is on Arc Mainnet')
     }
     prevAddress.current = address

@@ -1,12 +1,15 @@
-# FLUXORA Payments - standalone, one file
+# FLUXORA Payments - standalone
 
-`FluxoraPaymentsStandalone.sol` is a self-contained copy (OpenZeppelin 5.6.1 inlined) of
-`../src/FluxoraPaymentsStandalone.sol`, ready to paste into Remix.
+This folder holds the ABI of `../src/FluxoraPaymentsStandalone.sol`. The single-file Remix copy is no longer stored
+here; generate it when needed:
+
+```
+forge flatten contracts/src/FluxoraPaymentsStandalone.sol -o FluxoraPaymentsStandalone.flat.sol
+```
 
 - Compiler 0.8.28, EVM `cancun`, optimizer on with 200 runs
 - Constructor `(uint48 adminTransferDelay, address[] initialTokens)`; the deployer becomes admin and pauser
 - ABI: `FluxoraPaymentsStandalone.abi.json`
 - Instructions: `../../docs/PAYMENTS_REMIX_DEPLOYMENT.md`
 
-Regenerate after any change to `../src/FluxoraPaymentsStandalone.sol`: `forge flatten`, re-add the header banner,
-then re-run the tests. Do not hand-edit the single file.
+Flatten again after any change to `../src/FluxoraPaymentsStandalone.sol`, and re-run the tests first.

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { memo, useCallback, useState, type ReactNode } from 'react'
 import clsx from 'clsx'
 import { AnimatePresence, motion } from 'framer-motion'
 import { MoreHorizontal, X } from 'lucide-react'
@@ -7,12 +7,13 @@ import { ViewContext, VIEW_THEMES } from '@/lib/theme'
 import { Header } from './Header'
 import { Wordmark } from './Logo'
 import { ConnectionStatus } from './ConnectionStatus'
+import { prefetchView } from '@/lib/viewLoaders'
 
-const DESKTOP: View[] = ['dashboard', 'send', 'receive', 'swap', 'bridge', 'pay', 'history', 'earn', 'govern']
+const DESKTOP: View[] = ['dashboard', 'send', 'receive', 'swap', 'bridge', 'pay', 'history']
 const MOBILE_MAIN: View[] = ['dashboard', 'send', 'swap', 'bridge']
-const MOBILE_MORE: View[] = ['receive', 'pay', 'history', 'earn', 'govern']
+const MOBILE_MORE: View[] = ['receive', 'pay', 'history']
 
-function Backdrop() {
+const Backdrop = memo(function Backdrop() {
   return (
     <div className="aurora" aria-hidden="true">
       <div className="orb o1" />
@@ -22,14 +23,18 @@ function Backdrop() {
       <div className="grid" />
     </div>
   )
-}
+})
 
-function NavButton({ view, active, onClick, compact }: { view: View; active: boolean; onClick: () => void; compact?: boolean }) {
+const NavButton = memo(function NavButton({ view, active, onClick, compact }: { view: View; active: boolean; onClick: (v: View) => void; compact?: boolean }) {
   const t = VIEW_THEMES[view]
   const Icon = t.icon
   return (
     <button
-      onClick={onClick}
+      onClick={() => onClick(view)}
+      // Start loading the page as soon as the user shows intent, so the click lands on a page that is ready.
+      onPointerEnter={() => prefetchView(view)}
+      onFocus={() => prefetchView(view)}
+      onTouchStart={() => prefetchView(view)}
       aria-current={active ? 'page' : undefined}
       className={clsx(
         'group relative flex items-center transition',
@@ -47,14 +52,17 @@ function NavButton({ view, active, onClick, compact }: { view: View; active: boo
       <span className="relative">{t.label}</span>
     </button>
   )
-}
+})
 
 export function Shell({ view, navigate, children }: { view: View; navigate: (v: View) => void; children: ReactNode }) {
   const [more, setMore] = useState(false)
-  const go = (v: View) => {
-    setMore(false)
-    navigate(v)
-  }
+  const go = useCallback(
+    (v: View) => {
+      setMore(false)
+      navigate(v)
+    },
+    [navigate],
+  )
 
   return (
     <ViewContext.Provider value={view}>
@@ -65,11 +73,11 @@ export function Shell({ view, navigate, children }: { view: View; navigate: (v: 
           <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 flex-col justify-between border-r border-white/5 bg-navy-900/50 p-5 backdrop-blur-xl lg:flex">
             <div>
               <button onClick={() => go('dashboard')} className="mb-8 mt-1 px-1" aria-label="FLUXORA home">
-                <Wordmark />
+                <Wordmark size={38} />
               </button>
               <nav className="flex flex-col gap-1" aria-label="Main">
                 {DESKTOP.map((v) => (
-                  <NavButton key={v} view={v} active={v === view} onClick={() => go(v)} />
+                  <NavButton key={v} view={v} active={v === view} onClick={go} />
                 ))}
               </nav>
             </div>
@@ -86,7 +94,7 @@ export function Shell({ view, navigate, children }: { view: View; navigate: (v: 
           <div className="min-w-0 flex-1">
             <Header />
             <main className="mx-auto w-full max-w-6xl px-4 pb-36 pt-6 lg:px-8 lg:pb-16 lg:pt-8">
-              <div key={view} className="animate-rise">{children}</div>
+              {children}
             </main>
           </div>
         </div>
@@ -95,7 +103,7 @@ export function Shell({ view, navigate, children }: { view: View; navigate: (v: 
         <nav className="safe-bottom fixed inset-x-0 bottom-0 z-40 px-3 lg:hidden" aria-label="Main">
           <div className="glass mx-auto flex max-w-md items-stretch gap-1 rounded-[26px] p-1.5">
             {MOBILE_MAIN.map((v) => (
-              <NavButton key={v} view={v} compact active={v === view} onClick={() => go(v)} />
+              <NavButton key={v} view={v} compact active={v === view} onClick={go} />
             ))}
             <button
               onClick={() => setMore(true)}

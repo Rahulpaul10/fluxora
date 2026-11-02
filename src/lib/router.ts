@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
-export type View = 'dashboard' | 'send' | 'receive' | 'swap' | 'bridge' | 'pay' | 'history' | 'earn' | 'govern'
+export type View = 'dashboard' | 'send' | 'receive' | 'swap' | 'bridge' | 'pay' | 'history'
 
 export const VIEW_PATHS: Record<View, string> = {
   dashboard: '/',
@@ -10,8 +10,6 @@ export const VIEW_PATHS: Record<View, string> = {
   bridge: '/bridge',
   pay: '/pay',
   history: '/history',
-  earn: '/earn',
-  govern: '/govern',
 }
 
 function viewFromPath(pathname: string): View {
@@ -37,5 +35,7 @@ export function useRoute() {
     window.scrollTo({ top: 0 })
   }, [])
 
-  return { view: loc.view, params: new URLSearchParams(loc.search), navigate }
+  // Stable identity: pages and effects that depend on the params do not re-run on unrelated renders.
+  const params = useMemo(() => new URLSearchParams(loc.search), [loc.search])
+  return { view: loc.view, params, navigate }
 }

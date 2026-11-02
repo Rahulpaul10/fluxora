@@ -5,10 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 import {DeployFluxora} from "../script/DeployFluxora.s.sol";
 import {FluxoraToken} from "../src/FluxoraToken.sol";
-import {FluxoraTimelock} from "../src/FluxoraTimelock.sol";
-import {FluxoraGovernance} from "../src/FluxoraGovernance.sol";
 import {FluxoraPayments} from "../src/FluxoraPayments.sol";
-import {FluxoraStaking} from "../src/FluxoraStaking.sol";
 import {MockEtchableToken} from "./helpers/MockERC20.sol";
 
 /// @dev Shared helpers for the DeployFluxora script tests.
@@ -20,28 +17,18 @@ import {MockEtchableToken} from "./helpers/MockERC20.sol";
 abstract contract DeployFluxoraBase is Test {
     address internal constant USDC = 0x3600000000000000000000000000000000000000;
     bytes32 internal constant ADMIN_ROLE = bytes32(0);
-    bytes32 internal constant PROPOSER_ROLE = keccak256("PROPOSER_ROLE");
-    bytes32 internal constant EXECUTOR_ROLE = keccak256("EXECUTOR_ROLE");
-    bytes32 internal constant CANCELLER_ROLE = keccak256("CANCELLER_ROLE");
     bytes32 internal constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
-    bytes32 internal constant DISTRIBUTOR_ROLE = keccak256("REWARDS_DISTRIBUTOR_ROLE");
 
     DeployFluxora internal script;
 
     struct Deployed {
         FluxoraToken token;
-        FluxoraTimelock timelock;
-        FluxoraGovernance governor;
         FluxoraPayments payments;
-        FluxoraStaking staking;
     }
 
     // ------------------------------------------------------------ environment hygiene
-    function _envNames() internal pure returns (string[10] memory n) {
-        n = [
-            "FLUX_INITIAL_HOLDER", "TIMELOCK_DELAY", "VOTING_DELAY", "VOTING_PERIOD", "PROPOSAL_THRESHOLD",
-            "QUORUM_PERCENT", "STAKING_REWARDS_DURATION", "REWARDS_DISTRIBUTOR", "PAUSER", "EURC_ADDRESS"
-        ];
+    function _envNames() internal pure returns (string[3] memory n) {
+        n = ["FLUX_INITIAL_HOLDER", "PAYMENTS_ADMIN", "PAUSER"];
     }
 
     /// `vm.unsetEnv` is not available in this toolchain; an empty value is treated as "unset" by `vm.envOr`.
@@ -50,12 +37,8 @@ abstract contract DeployFluxoraBase is Test {
     }
 
     function _resetEnv() internal {
-        string[10] memory n = _envNames();
+        string[3] memory n = _envNames();
         for (uint256 i; i < n.length; ++i) _unsetEnv(n[i]);
-    }
-
-    function _setUint(string memory name, uint256 v) internal {
-        vm.setEnv(name, vm.toString(v));
     }
 
     function _setAddr(string memory name, address a) internal {
@@ -93,17 +76,14 @@ abstract contract DeployFluxoraBase is Test {
         vm.startStateDiffRecording();
         script.run();
         VmSafe.AccountAccess[] memory accesses = vm.stopAndReturnStateDiff();
-        address[] memory created = new address[](5);
+        address[] memory created = new address[](2);
         uint256 n;
         for (uint256 i; i < accesses.length; ++i) {
-            if (accesses[i].kind == VmSafe.AccountAccessKind.Create && n < 5) created[n++] = accesses[i].account;
+            if (accesses[i].kind == VmSafe.AccountAccessKind.Create && n < 2) created[n++] = accesses[i].account;
         }
-        assertEq(n, 5, "expected 5 contract creations");
+        assertEq(n, 2, "expected 2 contract creations");
         d.token = FluxoraToken(created[0]);
-        d.timelock = FluxoraTimelock(payable(created[1]));
-        d.governor = FluxoraGovernance(payable(created[2]));
-        d.payments = FluxoraPayments(created[3]);
-        d.staking = FluxoraStaking(created[4]);
+        d.payments = FluxoraPayments(created[1]);
     }
 
     /// Calls `script.run()`, requires it to revert with exactly `expected`, and returns how many
@@ -128,19 +108,5 @@ abstract contract DeployFluxoraBase is Test {
     /// `run()` must fail with `expected` BEFORE any contract is created.
     function _expectPreBroadcastRevert(bytes memory expected) internal {
         assertEq(_expectRunRevert(expected), 0, "a contract was created before the config check reverted");
-    }
-
-    /// Set one uint env var to an invalid value, expect the pre-broadcast error, clean up.
-    function _expectBadUint(string memory name, uint256 value, bytes memory expected) internal {
-        _setUint(name, value);
-        _expectPreBroadcastRevert(expected);
-        _unsetEnv(name);
-    }
-
-    /// Set one uint env var to a boundary value, require a full successful deployment, clean up.
-    function _deployWithUint(string memory name, uint256 value) internal returns (Deployed memory d) {
-        _setUint(name, value);
-        (d,) = _deploy();
-        _unsetEnv(name);
     }
 }

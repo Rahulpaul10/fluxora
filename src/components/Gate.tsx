@@ -6,6 +6,7 @@ import { useArcWallet, useConnectWallet } from '@/hooks/useWallet'
 import { walletConnectEnabled, walletConnectOrigin } from '@/config/wallet'
 import { CONTRACT_DEFINITIONS, type ContractName } from '@/config/contracts'
 import { Card, Notice } from './ui'
+import { LogoMark } from './Logo'
 
 /** Wallet connection interface: MetaMask connects directly, everything else goes through the wallet modal. */
 export function ConnectPanel() {
@@ -59,7 +60,7 @@ export function ConnectPanel() {
           )}
           <p className="text-center text-xs text-slate-500">
             Using another wallet?{' '}
-            <button className="text-[var(--a)] underline underline-offset-2" onClick={show}>
+            <button className="-my-3 inline-flex min-h-[44px] items-center px-1 text-[var(--a)] underline underline-offset-2" onClick={show}>
               Show all wallets
             </button>
             {walletConnectEnabled && <> · WalletConnect allowed domain: <span className="font-mono text-slate-400">{walletConnectOrigin()}</span></>}
@@ -78,9 +79,7 @@ export function ArcGate({ children, feature }: { children: ReactNode; feature: s
     return (
       <Card className="space-y-5 py-8">
         <div className="flex flex-col items-center gap-3 text-center">
-          <span className="theme-chip flex h-14 w-14 items-center justify-center rounded-2xl shadow-glow">
-            <Wallet />
-          </span>
+          <LogoMark size={64} tile />
           <div>
             <h2 className="font-display text-xl font-semibold">Connect your wallet</h2>
             <p className="mt-1 text-sm text-slate-400">Connect a wallet to use {feature}.</p>

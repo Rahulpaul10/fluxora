@@ -57,12 +57,23 @@ const isRevert = (error: unknown) => error instanceof BaseError && error.walk((e
 const poolId = (k: PoolKey): Hex =>
   keccak256(encodeAbiParameters(parseAbiParameters('address,address,uint24,int24,address'), [k.currency0, k.currency1, k.fee, k.tickSpacing, k.hooks]))
 
+/** A Uniswap v3 pool address never changes once created, so a found address is remembered. A missing pool is re-checked. */
+const poolAddressCache = new Map<string, Address>()
+async function v3PoolAddress(client: PublicClient, tokenIn: Address, tokenOut: Address, fee: number): Promise<Address> {
+  const key = `${BigInt(tokenIn) < BigInt(tokenOut) ? tokenIn : tokenOut}:${BigInt(tokenIn) < BigInt(tokenOut) ? tokenOut : tokenIn}:${fee}`
+  const known = poolAddressCache.get(key)
+  if (known) return known
+  const pool = await client.readContract({ address: V3_FACTORY, abi, functionName: 'getPool', args: [tokenIn, tokenOut, fee] })
+  if (pool !== zeroAddress) poolAddressCache.set(key, pool)
+  return pool
+}
+
 export async function findRoutes(client: PublicClient, tokenIn: Address, tokenOut: Address): Promise<Route[]> {
   if (tokenIn === zeroAddress || tokenOut === zeroAddress) throw new Error('Use the ERC-20 token address, not the 0x0 native sentinel')
   const [c0, c1] = BigInt(tokenIn) < BigInt(tokenOut) ? [tokenIn, tokenOut] : [tokenOut, tokenIn]
   const zeroForOne = tokenIn === c0
   const v3 = V3_FEES.map(async (fee): Promise<Route | null> => {
-    const pool = await client.readContract({ address: V3_FACTORY, abi, functionName: 'getPool', args: [tokenIn, tokenOut, fee] })
+    const pool = await v3PoolAddress(client, tokenIn, tokenOut, fee)
     if (pool === zeroAddress) return null
     const [liquidity, slot0] = await Promise.all([
       client.readContract({ address: pool, abi, functionName: 'liquidity' }),

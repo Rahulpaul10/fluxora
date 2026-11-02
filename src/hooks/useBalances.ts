@@ -19,29 +19,37 @@ export interface BalanceRow {
  */
 export function useTokenBalances() {
   const { address } = useAccount()
+  // Decimals never change, so they are read once and kept. Only balances are polled.
+  const decimalsQuery = useReadContracts({
+    contracts: ARC_TOKENS.map((t) => ({ address: t.address, abi: erc20Abi, functionName: 'decimals', chainId: ARC_CHAIN_ID }) as const),
+    allowFailure: true,
+    query: { staleTime: Infinity, gcTime: Infinity },
+  })
   const contracts = useMemo(
-    () =>
-      ARC_TOKENS.flatMap((t) => [
-        { address: t.address, abi: erc20Abi, functionName: 'balanceOf', args: [address as Address], chainId: ARC_CHAIN_ID } as const,
-        { address: t.address, abi: erc20Abi, functionName: 'decimals', chainId: ARC_CHAIN_ID } as const,
-      ]),
+    () => ARC_TOKENS.map((t) => ({ address: t.address, abi: erc20Abi, functionName: 'balanceOf', args: [address as Address], chainId: ARC_CHAIN_ID }) as const),
     [address],
   )
   const query = useReadContracts({
     contracts,
     allowFailure: true,
-    query: { enabled: Boolean(address), refetchInterval: 15_000 },
+    // Shared by every page that shows balances: switching pages reuses the cached result instead of refetching.
+    query: { enabled: Boolean(address), refetchInterval: 15_000, staleTime: 12_000 },
   })
 
-  const rows: BalanceRow[] = ARC_TOKENS.map((t, i) => {
-    const bal = query.data?.[i * 2]
-    const dec = query.data?.[i * 2 + 1]
-    const decimals = dec?.status === 'success' ? Number(dec.result) : t.decimals
-    return {
-      token: { ...t, decimals },
-      raw: bal?.status === 'success' ? (bal.result as bigint) : undefined,
-    }
-  })
+  // Stable rows: the array only changes when a balance or a decimals value actually changes.
+  const rows: BalanceRow[] = useMemo(
+    () =>
+      ARC_TOKENS.map((t, i) => {
+        const bal = query.data?.[i]
+        const dec = decimalsQuery.data?.[i]
+        const decimals = dec?.status === 'success' ? Number(dec.result) : t.decimals
+        return {
+          token: decimals === t.decimals ? t : { ...t, decimals },
+          raw: bal?.status === 'success' ? (bal.result) : undefined,
+        }
+      }),
+    [query.data, decimalsQuery.data],
+  )
   return { rows, isLoading: query.isLoading, refetch: query.refetch, isError: query.isError }
 }
 
@@ -52,7 +60,7 @@ export function useTokenPrices() {
     queryKey: ['token-prices'],
     enabled: Boolean(client),
     refetchInterval: 60_000,
-    staleTime: 30_000,
+    staleTime: 55_000,
     queryFn: async () => {
       const prices: Record<string, bigint | null> = { [USDC.symbol]: 10n ** BigInt(USDC.decimals) }
       if (!client) return prices

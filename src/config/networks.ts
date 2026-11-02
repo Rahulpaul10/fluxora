@@ -11,7 +11,7 @@
  *
  * To add a network later: add a viem chain to NETWORKS below (and to the chain tuple in ./wallet). The network
  * selector, explorer links and RPC settings then pick it up. Features that only
- * run on the home network (Send, Swap, Pay, Earn, Govern) stay on Arc.
+ * run on the home network (Send, Swap, Pay) stay on Arc.
  */
 import { fallback, http, type Chain, type Transport } from 'viem'
 import { arc, mainnet, base, arbitrum, optimism, polygon, avalanche } from 'viem/chains'
@@ -33,7 +33,7 @@ export interface NetworkConfig {
   /** RPC endpoints in priority order: the configured override first, then the registry default */
   rpcUrls: string[]
   explorerUrl: string
-  /** The home network is where Send, Swap, Pay, Earn and Govern run */
+  /** The home network is where Send, Swap and Pay run */
   isHome: boolean
   /** True when an environment variable replaced the default RPC */
   rpcOverridden: boolean

@@ -81,8 +81,8 @@ contract FluxoraPaymentsStandalonePayTest is FluxoraPaymentsStandaloneTestBase {
     // ------------------------------------------------------------ pay reverts
     function test_RevertPayUnsupportedToken() public {
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(FPS.UnsupportedToken.selector, address(eurc)));
-        pay.pay(address(eurc), bob, 1, REF, "", 0);
+        vm.expectRevert(abi.encodeWithSelector(FPS.UnsupportedToken.selector, address(tokenB)));
+        pay.pay(address(tokenB), bob, 1, REF, "", 0);
     }
 
     function test_RevertPayInvalidRecipients() public {
@@ -175,8 +175,8 @@ contract FluxoraPaymentsStandalonePayTest is FluxoraPaymentsStandaloneTestBase {
 
     function test_RevertCreateRequestUnsupportedToken() public {
         vm.prank(carol);
-        vm.expectRevert(abi.encodeWithSelector(FPS.UnsupportedToken.selector, address(eurc)));
-        pay.createRequest(address(eurc), 1, 0, REF, "");
+        vm.expectRevert(abi.encodeWithSelector(FPS.UnsupportedToken.selector, address(tokenB)));
+        pay.createRequest(address(tokenB), 1, 0, REF, "");
     }
 
     function test_RevertCreateRequestZeroAmount() public {

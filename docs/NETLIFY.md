@@ -19,14 +19,13 @@ Set them in Netlify under Site configuration > Environment variables, then trigg
 
 | Variable | Needed | Value |
 |---|---|---|
-| `VITE_ARC_EURC_ADDRESS`, `VITE_ARC_WETH_ADDRESS`, `VITE_ARC_CIRBTC_ADDRESS` | already set in `netlify.toml` | verified Arc token addresses |
 | `VITE_WALLETCONNECT_PROJECT_ID` | for WalletConnect | project id from https://cloud.reown.com |
 | `VITE_ARC_RPC_URL` | recommended for heavy use | your own Arc RPC (the public one throttles bursts). A URL with a key is visible to every visitor, so use a key restricted to your domain |
 | `VITE_ARC_EXPLORER_URL` | no | defaults to the built-in Arc explorer |
 | `VITE_FLUXORA_*_ADDRESS`, `VITE_FLUXORA_DEPLOY_BLOCK` | after you deploy the contracts | see `docs/DEPLOYMENT.md` |
 | `VITE_APP_URL` | **leave empty** | the app uses the domain that serves it |
 
-Without the FLUXORA contract addresses the app shows "Contract Not Deployed" for Pay requests, Earn and Govern. That is expected.
+Without the FLUXORA contract addresses the app shows "Contract Not Deployed" for Pay requests and receipts. That is expected.
 A wrong or missing value shows a "Configuration problem" notice at the top of the app.
 
 ## Steps (you do these; nothing is deployed until you say so)

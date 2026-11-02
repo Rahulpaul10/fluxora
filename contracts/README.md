@@ -6,11 +6,9 @@ contract addresses in this repository, and the deployment script never runs on i
 ```
 contracts/
   src/
-    FluxoraToken.sol        FLUX, fixed-supply ERC-20 (burn, permit, voting)
+    FluxoraToken.sol        FLUX, fixed-supply ERC-20 (burn, permit)
     FluxoraPayments.sol     direct payments, payment requests, receipts
-    FluxoraStaking.sol      stake FLUX, earn FLUX rewards
-    FluxoraGovernance.sol   token-voting governor
-    FluxoraTimelock.sol     timelock that executes passed proposals
+    FluxoraPaymentsStandalone.sol  payments contract that needs no token; ABI and Remix steps in standalone/README.md
   test/                     unit, fuzz and invariant tests (+ test/helpers mocks)
   script/DeployFluxora.s.sol  deployment script
   deployments/              your own record of deployed addresses (empty until you deploy)
@@ -21,14 +19,11 @@ contracts/
 
 | Contract | What it does |
 | --- | --- |
-| `FluxoraToken` | 1,000,000,000 FLUX minted once to the initial holder. Burnable, EIP-2612 permit, voting power with a timestamp clock. No mint function, no owner. |
+| `FluxoraToken` | 1,000,000,000 FLUX minted once to the initial holder. Burnable and EIP-2612 permit. No mint function, no owner, no voting. |
 | `FluxoraPayments` | `pay`, `createRequest`, `payRequest`, `cancelRequest`. Direct transfers from payer to recipient (it never holds funds), per-user receipt and request indexes, token allowlist, optional fee on top capped at 1%, pausable. |
-| `FluxoraStaking` | Stake FLUX and earn FLUX. Rewards are pulled in by the rewards distributor so they are always fully funded. Withdraw and claim keep working while paused. Emissions are never lost while nobody is staked. |
-| `FluxoraGovernance` | OpenZeppelin Governor (settings, simple counting, votes, quorum fraction, timelock control). |
-| `FluxoraTimelock` | OpenZeppelin TimelockController with a 14-day execution window: a queued operation that is not executed within 14 days after it becomes ready can no longer be executed. |
+| `FluxoraPaymentsStandalone` | Same payment features as one self-contained contract with a delayed two-step admin transfer. Use it when you only need the Pay page. |
 
-After deployment the timelock owns the admin roles of Payments and Staking, so fees, token allowlist and reward settings change
-only through a governance vote. The deployer keeps no lasting admin role.
+After deployment the payments admin is the address you set (`PAYMENTS_ADMIN`, default: the deployer). Use a multisig for it.
 
 ## Build and test
 
@@ -42,7 +37,7 @@ forge install foundry-rs/forge-std          # test library, installs into ../lib
 cd contracts
 forge build
 forge test                                  # unit, fuzz and invariant tests
-forge test --match-contract FluxoraStaking  # a subset
+forge test --match-contract FluxoraPayments  # a subset
 ```
 
 ## Deploy (you do this, from your own wallet)
@@ -82,10 +77,9 @@ Constructor arguments (ABI encoded) for each contract:
 
 ```bash
 cast abi-encode "constructor(address)" <INITIAL_HOLDER>                                   # FluxoraToken
-cast abi-encode "constructor(uint256,address[],address[],address)" <DELAY> "[]" "[]" <DEPLOYER>  # FluxoraTimelock
 ```
 
-Payments, Staking and Governance take addresses and numbers printed by the deployment script; read the exact values from
+Payments takes addresses printed by the deployment script; read the exact values from
 `broadcast/DeployFluxora.s.sol/<chainId>/run-latest.json` (`arguments` for each transaction). If the explorer supports
 `forge verify-contract` with a verifier URL, use `--verifier` and `--verifier-url` from the explorer's own documentation.
 

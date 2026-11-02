@@ -196,7 +196,7 @@ function SendForm({ presetTo, presetAmount, presetToken }: { presetTo?: string; 
               <label className="label" htmlFor="amt">
                 Amount
               </label>
-              <button className="text-xs font-semibold text-[var(--a)] hover:brightness-125" onClick={setMax} type="button">
+              <button className="-my-3.5 py-3.5 text-xs font-semibold text-[var(--a)] hover:brightness-125" onClick={setMax} type="button">
                 Balance {balance === undefined ? '…' : fmtToken(balance, token.decimals, 4)} · Max
               </button>
             </div>

@@ -86,12 +86,6 @@ async function main(): Promise<void> {
     const ok = await client.readContract({ ...c, functionName: 'supportedTokens', args: [usdc] })
     check('Arc USDC is accepted', ok, usdc)
   }
-  const eurc = process.env.VITE_ARC_EURC_ADDRESS
-  if (eurc && isAddress(eurc)) {
-    const ok = await client.readContract({ ...c, functionName: 'supportedTokens', args: [getAddress(eurc)] })
-    if (ok) check('EURC is accepted', true, eurc)
-    else warn('EURC is not accepted', 'it was not in the constructor list; the admin can add it with setTokenSupported')
-  }
   console.log(`\n${passed} passed, ${failed} failed, ${warned} warnings`)
 }
 

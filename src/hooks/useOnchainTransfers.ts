@@ -93,7 +93,7 @@ export function useOnchainTransfers() {
     enabled: Boolean(address && client),
     initialPageParam: undefined as bigint | undefined,
     refetchOnWindowFocus: false,
-    staleTime: 60_000,
+    staleTime: 180_000, // scanning blocks is expensive: reuse the result when moving between pages
     queryFn: async ({ pageParam }) => {
       if (!client || !address) return { txs: [] as TransferTx[], next: 0n, head: 0n }
       const head = await client.getBlockNumber()

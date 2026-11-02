@@ -8,7 +8,7 @@ import {MockERC20} from "./helpers/MockERC20.sol";
 abstract contract FluxoraPaymentsStandaloneTestBase is Test {
     FluxoraPaymentsStandalone internal pay;
     MockERC20 internal usdc;
-    MockERC20 internal eurc;
+    MockERC20 internal tokenB;
     /// @dev The deployer is the default admin AND the pauser.
     address internal deployer = makeAddr("deployer");
     address internal admin;
@@ -26,20 +26,20 @@ abstract contract FluxoraPaymentsStandaloneTestBase is Test {
         pauser = deployer;
         vm.warp(1_700_000_000);
         usdc = new MockERC20("USD Coin", "USDC", 6);
-        eurc = new MockERC20("Euro Coin", "EURC", 6);
+        tokenB = new MockERC20("Token B", "TKB", 6);
         address[] memory tokens = new address[](1);
         tokens[0] = address(usdc);
         vm.prank(deployer);
         pay = new FluxoraPaymentsStandalone(DELAY, tokens);
         usdc.mint(alice, START);
         usdc.mint(bob, START);
-        eurc.mint(alice, START);
+        tokenB.mint(alice, START);
         vm.prank(alice);
         usdc.approve(address(pay), type(uint256).max);
         vm.prank(bob);
         usdc.approve(address(pay), type(uint256).max);
         vm.prank(alice);
-        eurc.approve(address(pay), type(uint256).max);
+        tokenB.approve(address(pay), type(uint256).max);
     }
 
     function _setFee(uint256 bps) internal {

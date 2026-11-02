@@ -79,12 +79,12 @@ contract FluxoraPaymentsStandaloneAdminRulesTest is FluxoraPaymentsStandaloneTes
     function test_ConstructorAllowlistsAllInitialTokensAndToleratesDuplicates() public {
         address[] memory tokens = new address[](3);
         tokens[0] = address(usdc);
-        tokens[1] = address(eurc);
+        tokens[1] = address(tokenB);
         tokens[2] = address(usdc);
         vm.prank(deployer);
         FPS p = new FPS(DELAY, tokens);
         assertTrue(p.supportedTokens(address(usdc)));
-        assertTrue(p.supportedTokens(address(eurc)));
+        assertTrue(p.supportedTokens(address(tokenB)));
     }
 
     function test_ConstructorEmptyTokensOk() public {
@@ -95,11 +95,11 @@ contract FluxoraPaymentsStandaloneAdminRulesTest is FluxoraPaymentsStandaloneTes
     function test_ConstructorEmitsOneEventPerInitialToken() public {
         address[] memory tokens = new address[](2);
         tokens[0] = address(usdc);
-        tokens[1] = address(eurc);
+        tokens[1] = address(tokenB);
         vm.expectEmit(true, false, false, true);
         emit FPS.TokenSupportUpdated(address(usdc), true);
         vm.expectEmit(true, false, false, true);
-        emit FPS.TokenSupportUpdated(address(eurc), true);
+        emit FPS.TokenSupportUpdated(address(tokenB), true);
         vm.prank(deployer);
         new FPS(DELAY, tokens);
     }
@@ -280,7 +280,7 @@ contract FluxoraPaymentsStandaloneAdminRulesTest is FluxoraPaymentsStandaloneTes
         vm.expectRevert(_unauth(admin, ADMIN_ROLE));
         pay.setFeeRecipient(alice);
         vm.expectRevert(_unauth(admin, ADMIN_ROLE));
-        pay.setTokenSupported(address(eurc), true);
+        pay.setTokenSupported(address(tokenB), true);
         vm.expectRevert(_unauth(admin, ADMIN_ROLE));
         pay.beginDefaultAdminTransfer(admin);
         vm.stopPrank();
@@ -289,11 +289,11 @@ contract FluxoraPaymentsStandaloneAdminRulesTest is FluxoraPaymentsStandaloneTes
         vm.startPrank(newAdmin);
         pay.setFeeBps(5);
         pay.setFeeRecipient(alice);
-        pay.setTokenSupported(address(eurc), true);
+        pay.setTokenSupported(address(tokenB), true);
         vm.stopPrank();
         assertEq(pay.feeBps(), 5);
         assertEq(pay.feeRecipient(), alice);
-        assertTrue(pay.supportedTokens(address(eurc)));
+        assertTrue(pay.supportedTokens(address(tokenB)));
     }
 
     function test_PauserRoleFollowsAdminOnTransfer() public {
@@ -446,7 +446,7 @@ contract FluxoraPaymentsStandaloneAdminRulesTest is FluxoraPaymentsStandaloneTes
             address c = callers[i];
             vm.startPrank(c);
             vm.expectRevert(_unauth(c, ADMIN_ROLE));
-            pay.setTokenSupported(address(eurc), true);
+            pay.setTokenSupported(address(tokenB), true);
             vm.expectRevert(_unauth(c, ADMIN_ROLE));
             pay.setFeeBps(0);
             vm.expectRevert(_unauth(c, ADMIN_ROLE));
@@ -500,7 +500,7 @@ contract FluxoraPaymentsStandaloneAdminRulesTest is FluxoraPaymentsStandaloneTes
         vm.expectRevert(_unauth(alice, ADMIN_ROLE));
         pay.setFeeRecipient(alice);
         vm.expectRevert(_unauth(alice, ADMIN_ROLE));
-        pay.setTokenSupported(address(eurc), true);
+        pay.setTokenSupported(address(tokenB), true);
         vm.expectRevert(_unauth(alice, ADMIN_ROLE));
         pay.grantRole(PAUSER, bob);
         vm.stopPrank();

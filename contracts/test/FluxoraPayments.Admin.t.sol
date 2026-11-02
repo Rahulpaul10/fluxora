@@ -19,7 +19,7 @@ contract FluxoraPaymentsAdminTest is FluxoraPaymentsTestBase {
         assertTrue(pay.hasRole(pay.PAUSER_ROLE(), pauser));
         assertFalse(pay.hasRole(pay.DEFAULT_ADMIN_ROLE(), pauser));
         assertTrue(pay.supportedTokens(address(usdc)));
-        assertFalse(pay.supportedTokens(address(eurc)));
+        assertFalse(pay.supportedTokens(address(tokenB)));
         assertEq(pay.nextPaymentId(), 1);
         assertEq(pay.nextRequestId(), 1);
         assertEq(pay.feeBps(), 0);
@@ -94,20 +94,20 @@ contract FluxoraPaymentsAdminTest is FluxoraPaymentsTestBase {
     // ------------------------------------------------------------ setTokenSupported
     function test_AdminSetsTokenSupportedAndEmits() public {
         vm.expectEmit(true, false, false, true, address(pay));
-        emit FluxoraPayments.TokenSupportUpdated(address(eurc), true);
+        emit FluxoraPayments.TokenSupportUpdated(address(tokenB), true);
         vm.prank(admin);
-        pay.setTokenSupported(address(eurc), true);
-        assertTrue(pay.supportedTokens(address(eurc)));
+        pay.setTokenSupported(address(tokenB), true);
+        assertTrue(pay.supportedTokens(address(tokenB)));
 
         vm.prank(admin);
-        pay.setTokenSupported(address(eurc), false);
-        assertFalse(pay.supportedTokens(address(eurc)));
+        pay.setTokenSupported(address(tokenB), false);
+        assertFalse(pay.supportedTokens(address(tokenB)));
     }
 
     function test_RevertSetTokenSupportedNonAdmin() public {
         vm.prank(alice);
         vm.expectRevert(_unauth(alice, bytes32(0)));
-        pay.setTokenSupported(address(eurc), true);
+        pay.setTokenSupported(address(tokenB), true);
     }
 
     function test_RevertSetTokenSupportedZeroOrEoa() public {

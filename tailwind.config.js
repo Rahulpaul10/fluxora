@@ -35,7 +35,7 @@ export default {
         pan: { '0%': { backgroundPosition: '0% 50%' }, '100%': { backgroundPosition: '200% 50%' } },
         shimmer: { '100%': { transform: 'translateX(100%)' } },
         pulseRing: { '0%': { transform: 'scale(0.8)', opacity: '0.8' }, '100%': { transform: 'scale(2.2)', opacity: '0' } },
-        rise: { '0%': { opacity: '0', transform: 'translateY(14px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+        rise: { '0%': { opacity: '0', transform: 'translateY(6px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
       },
       animation: {
         drift1: 'drift1 22s ease-in-out infinite',
@@ -43,7 +43,7 @@ export default {
         drift3: 'drift3 25s ease-in-out infinite',
         pan: 'pan 8s linear infinite',
         pulseRing: 'pulseRing 2s ease-out infinite',
-        rise: 'rise .5s cubic-bezier(.2,.8,.2,1) both',
+        rise: 'rise .22s cubic-bezier(.2,.8,.2,1) both',
       },
     },
   },

@@ -39,10 +39,3 @@ export function fmtDate(unixSeconds: number): string {
     minute: '2-digit',
   })
 }
-
-export function fmtDuration(seconds: number): string {
-  if (seconds < 90) return `${Math.round(seconds)}s`
-  if (seconds < 5400) return `${Math.round(seconds / 60)} min`
-  if (seconds < 172800) return `${Math.round(seconds / 3600)} h`
-  return `${Math.round(seconds / 86400)} days`
-}

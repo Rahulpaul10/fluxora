@@ -59,21 +59,11 @@ contract DeployFluxoraTest is
         f = _run(f, "UsdcDecimalsMalformed", this.scenario_UsdcDecimalsMalformed.selector);
         f = _run(f, "UsdcDecimalsCallReverts", this.scenario_UsdcDecimalsCallReverts.selector);
         // pre-broadcast config validation
-        f = _run(f, "ProposalThresholdTooHigh", this.scenario_ProposalThresholdTooHigh.selector);
-        f = _run(f, "InvalidQuorumPercent", this.scenario_InvalidQuorumPercent.selector);
-        f = _run(f, "VotingPeriodTooShort", this.scenario_VotingPeriodTooShort.selector);
-        f = _run(f, "VotingPeriodAboveUint32Reverts", this.scenario_VotingPeriodAboveUint32Reverts.selector);
-        f = _run(f, "TimelockDelayTooShort", this.scenario_TimelockDelayTooShort.selector);
-        f = _run(f, "InvalidRewardsDuration", this.scenario_InvalidRewardsDuration.selector);
-        f = _run(f, "ZeroAddressRolesAndEurcWithoutCodeAreInvalid", this.scenario_ZeroAddressRolesAndEurcWithoutCodeAreInvalid.selector);
+        f = _run(f, "ZeroAddressRolesAreInvalid", this.scenario_ZeroAddressRolesAreInvalid.selector);
         f = _run(f, "ConfigErrorsArePrioritisedOverUsdcChecks", this.scenario_ConfigErrorsArePrioritisedOverUsdcChecks.selector);
         // post-deploy wiring assertions
-        f = _run(f, "MissingProposerRole", this.scenario_MissingProposerRole.selector);
-        f = _run(f, "MissingCancellerRole", this.scenario_MissingCancellerRole.selector);
-        f = _run(f, "MissingOpenExecutorRole", this.scenario_MissingOpenExecutorRole.selector);
         f = _run(f, "MissingPaymentsAdminRole", this.scenario_MissingPaymentsAdminRole.selector);
-        f = _run(f, "MissingStakingAdminRole", this.scenario_MissingStakingAdminRole.selector);
-        f = _run(f, "UnexpectedGovernorTimelock", this.scenario_UnexpectedGovernorTimelock.selector);
+        f = _run(f, "MissingPaymentsPauserRole", this.scenario_MissingPaymentsPauserRole.selector);
         f = _run(f, "PredictedAddressesMatchRealDeployment", this.scenario_PredictedAddressesMatchRealDeployment.selector);
         assertEq(f, "", "failed scenarios");
     }

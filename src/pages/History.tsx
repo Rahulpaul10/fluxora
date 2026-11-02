@@ -130,7 +130,7 @@ function HistoryList() {
                     {r.status === 'success' ? 'Confirmed' : r.status === 'pending' ? 'Pending' : r.status === 'failed' ? 'Reverted' : 'Not found'}
                   </span>
                   <div className="flex items-center gap-2">
-                    {r.hash && <CopyButton value={r.hash} label="Hash" className="!min-h-[36px] !px-3" />}
+                    {r.hash && <CopyButton value={r.hash} label="Hash" className="!min-h-[44px] !px-3" />}
                     {r.hash && <ExplorerLink href={explorerTx(r.chainId, r.hash)}>Explorer</ExplorerLink>}
                   </div>
                 </li>

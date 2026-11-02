@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import { AlertTriangle, Check, Copy, ExternalLink, Info, Loader2 } from 'lucide-react'
-import { TokenUSDC, TokenETH } from '@web3icons/react'
+import { TokenEURC, TokenETH, TokenUSDC } from '@web3icons/react'
 import clsx from 'clsx'
 import { toast } from 'sonner'
 import type { TokenInfo } from '@/lib/tokens'
@@ -61,6 +61,7 @@ export function Notice({ tone = 'info', children, action }: { tone?: NoticeTone;
 
 export function TokenIcon({ token, size = 32 }: { token: Pick<TokenInfo, 'symbol' | 'color'>; size?: number }) {
   if (token.symbol === 'USDC') return <TokenUSDC variant="branded" size={size} />
+  if (token.symbol === 'EURC') return <TokenEURC variant="branded" size={size} />
   if (token.symbol === 'WETH') return <TokenETH variant="branded" size={size} />
   return (
     <span
@@ -101,7 +102,7 @@ export function ExplorerLink({ href, children }: { href: string; children?: Reac
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 text-sm font-medium text-neon hover:brightness-125"
+      className="-my-3 inline-flex min-h-[44px] items-center gap-1 text-sm font-medium text-neon hover:brightness-125"
     >
       {children ?? 'View on explorer'}
       <ExternalLink size={14} />
